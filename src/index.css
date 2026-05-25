@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #064e3b;   /* Emerald 900 - Dark Green */
+  --color-secondary: #059669; /* Emerald 600 - Grass Green */
+  --color-accent: #d97706;    /* Amber 600 - Gold */
+  --color-surface: #fdfdfb;  /* Creamy White */
+  
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: "Amiris", serif;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-primary font-sans antialiased;
+  }
+}
+
+@font-face {
+  font-family: 'Amiri';
+  src: url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+  @apply font-bold mt-4 mb-2;
+}
+.markdown-body p {
+  @apply mb-2 leading-relaxed;
+}
+.markdown-body ul {
+  @apply list-disc ml-4 mb-2;
+}
+

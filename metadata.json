@@ -1,0 +1,8 @@
+{
+  "name": "QuranAI",
+  "description": "AI-Powered Quran Learning Assistant for memorization, understanding, and motivation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
