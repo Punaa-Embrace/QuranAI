@@ -489,26 +489,29 @@ export default function SurahDetailView({ nomor, onBack }: { nomor: number; onBa
 
       <AnimatePresence>
         {showSummary && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div 
+            key="summary-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowSummary(false)}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+          >
             <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSummary(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div 
+              key="summary-modal-content"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl"
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl cursor-default"
             >
               <div className="p-4 bg-emerald-600 text-white flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <Sparkles size={18} />
                   <span className="text-sm font-bold uppercase tracking-widest">Surah AI Summary</span>
                 </div>
-                <button onClick={() => setShowSummary(false)}>
+                <button onClick={() => setShowSummary(false)} className="cursor-pointer">
                   <X size={20} />
                 </button>
               </div>
@@ -528,26 +531,29 @@ export default function SurahDetailView({ nomor, onBack }: { nomor: number; onBa
                 Pahami inti sari agar hafalan lebih berkesan.
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* AI Backdrop Overlay Modal for Ayat Explanation */}
       <AnimatePresence>
         {selectedAyat && (
-          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <motion.div 
+            key="explain-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedAyat(null)}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 cursor-pointer"
+          >
             <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedAyat(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div 
+              key="explain-modal-content"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              className="relative w-full max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[85vh] cursor-default"
             >
               <div className="p-4 flex items-center justify-between border-b border-gray-100 bg-emerald-50">
                 <div className="flex items-center gap-3">
@@ -561,7 +567,7 @@ export default function SurahDetailView({ nomor, onBack }: { nomor: number; onBa
                 </div>
                 <button 
                   onClick={() => setSelectedAyat(null)}
-                  className="p-2 hover:bg-white/50 rounded-full"
+                  className="p-2 hover:bg-white/50 rounded-full cursor-pointer"
                 >
                   <X size={24} />
                 </button>
@@ -584,7 +590,7 @@ export default function SurahDetailView({ nomor, onBack }: { nomor: number; onBa
                 Powered by Google Gemini AI
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
