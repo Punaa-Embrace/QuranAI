@@ -23,6 +23,17 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState("Assalamualaikum");
 
+  const getFirstParagraphOnly = (text: string) => {
+    if (!text) return "";
+    // Remove title symbols or heading markdown structures like ### or -
+    const cleaned = text
+      .replace(/^#+\s+.+$/gm, "")
+      .replace(/^-\s+\*\*.+?\*\*:\s*/g, "")
+      .trim();
+    const paragraphs = cleaned.split(/\n+/).map(p => p.trim()).filter(Boolean);
+    return paragraphs[0] || text;
+  };
+
   useEffect(() => {
     // Dynamic Greeting based on time
     const hour = new Date().getHours();
@@ -75,25 +86,55 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
         </div>
       </section>
 
-      {/* Daily Quote Card */}
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-primary p-6 rounded-3xl text-white relative overflow-hidden shadow-xl shadow-emerald-950/10 border-b-4 border-emerald-700"
-      >
-        <div className="absolute -top-6 -right-6 opacity-10 bg-white w-28 h-28 rounded-full" />
-        <div className="relative z-10 space-y-4">
-          <div className="flex items-center gap-2 text-white/80">
-            <Quote size={16} />
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-200">Mutiara Hikmah Hari Ini</span>
-          </div>
-          {loading ? (
-            <div className="h-10 w-full bg-white/10 animate-pulse rounded-xl" />
-          ) : (
-            <div className="text-base font-semibold leading-relaxed italic text-white/95 markdown-body-quote">
-              <Markdown>{quote}</Markdown>
+      {/* Daily Spiritual Uplift Card (Quote) */}
+      <div className="w-full">
+        {/* Mutiara Hikmah Hari Ini */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-primary p-5 rounded-3xl text-white relative overflow-hidden shadow-md border-b-4 border-emerald-800"
+        >
+          <div className="absolute -top-6 -right-6 opacity-10 bg-white w-24 h-24 rounded-full" />
+          <div className="relative z-10 space-y-3">
+            <div className="flex items-center gap-2 text-white/80">
+              <Quote size={14} className="text-amber-300" />
+              <span className="text-[9px] font-extrabold uppercase tracking-widest text-emerald-200">Mutiara Hikmah Hari Ini</span>
             </div>
-          )}
+            {loading ? (
+              <div className="h-12 w-full bg-white/10 animate-pulse rounded-xl" />
+            ) : (
+              <p className="text-xs sm:text-sm font-semibold leading-relaxed italic text-white/95">
+                {getFirstParagraphOnly(quote)}
+              </p>
+            )}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Gamifikasi Banner */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        onClick={() => onNavigate("game")}
+        className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-5 rounded-[24px] shadow-xs flex items-center justify-between gap-4 cursor-pointer hover:shadow-md hover:from-amber-600 hover:to-amber-700 transition-all border border-amber-400 group relative overflow-hidden"
+      >
+        <div className="absolute -right-6 -bottom-6 opacity-10 bg-white w-24 h-24 rounded-full group-hover:scale-110 transition-transform duration-300" />
+        <div className="flex items-center gap-3.5 relative z-10">
+          <div className="p-3 bg-white/20 rounded-2xl text-white shrink-0 group-hover:rotate-12 transition-transform duration-300">
+            <Trophy size={20} />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h4 className="font-extrabold text-xs sm:text-sm">Kuis Hafalan Al-Quran 🎮</h4>
+              <span className="text-[7.5px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider animate-pulse">Seru!</span>
+            </div>
+            <p className="text-[10px] text-amber-50 mt-1 leading-relaxed max-w-[200px] sm:max-w-[240px]">
+              Tebak kelanjutan ayat & susun kata acak untuk asah daya ingat murojaahmu!
+            </p>
+          </div>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 group-hover:translate-x-1 transition-transform cursor-pointer">
+          <ArrowRight size={14} />
         </div>
       </motion.div>
 
@@ -188,31 +229,7 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
         </div>
       </div>
 
-      {/* AI Motivation Section (Still shown as a premium, detailed insight widget) */}
-      <div className="space-y-4">
-        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2">
-          <Sparkles size={16} className="text-amber-500 animate-pulse" /> Inspirasi Pejuang Quran
-        </h3>
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-emerald-50/50 border border-emerald-100 p-5 rounded-3xl italic text-gray-700 leading-relaxed text-sm relative"
-        >
-          <div className="absolute right-4 bottom-4 text-emerald-100">
-            <Heart size={32} className="fill-emerald-100" />
-          </div>
-          <div className="relative z-10">
-            {loading ? (
-              <div className="space-y-2 animate-pulse">
-                <div className="h-4 bg-emerald-100/50 rounded w-full" />
-                <div className="h-4 bg-emerald-100/50 rounded w-3/4" />
-              </div>
-            ) : (
-              motivation
-            )}
-          </div>
-        </motion.div>
-      </div>
+
 
       {/* Quick Tips Footer Card */}
       <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100 flex items-start gap-4">

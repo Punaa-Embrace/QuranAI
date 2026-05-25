@@ -5,6 +5,7 @@ import SurahList from "./components/SurahList";
 import SurahDetailView from "./components/SurahDetail";
 import Progress from "./components/Progress";
 import AICompanion from "./components/AICompanion";
+import QuranQuizGame from "./components/QuranQuizGame";
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState("home");
@@ -43,6 +44,12 @@ export default function App() {
           <SurahList 
             onSelect={(id) => setSelectedSurah(id)} 
             initialAiMode={initialAiMode} 
+          />
+        );
+      case "game":
+        return (
+          <QuranQuizGame 
+            onBack={() => setCurrentTab("home")} 
           />
         );
       case "progress":

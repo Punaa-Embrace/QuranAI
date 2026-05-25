@@ -13,6 +13,7 @@ export interface Ayat {
   teksArab: string;
   teksLatin: string;
   teksIndonesia: string;
+  audio?: Record<string, string>;
 }
 
 export interface SurahDetail extends Surah {
