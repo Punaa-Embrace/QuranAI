@@ -70,7 +70,7 @@ export default function MurojaahCoachView() {
       </div>
 
       {/* Chat Box */}
-      <div className="flex-1 flex flex-col h-[420px] bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="flex-1 flex flex-col h-[420px] md:h-[550px] bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         {/* Header Chat */}
         <div className="bg-gray-50/80 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -106,7 +106,7 @@ export default function MurojaahCoachView() {
               </div>
 
               {/* Starter Buttons */}
-              <div className="grid grid-cols-2 gap-2.5 w-full max-w-[280px] pt-2">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 w-full max-w-lg lg:max-w-2xl pt-2 mx-auto">
                 {[
                   { text: "Saya hafal Al-Mulk ayat 1-5", display: "Al-Mulk 1-5 📖" },
                   { text: "Saya hafal An-Naba ayat 1-10", display: "An-Naba 1-10 📖" },

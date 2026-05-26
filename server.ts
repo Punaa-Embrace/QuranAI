@@ -269,11 +269,11 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
           config: {
             systemInstruction: `Anda adalah QuranMemo AI Assistant, asisten spiritual dan akademik super cerdas (overpowered level), hangat, dan interaktif yang siap mendampingi mahasiswa dan pelajar Muslim dalam menghafal, memahami tafsir, dan mempraktikkan Al-Quran.
 
-            Pilar Kepribadian Anda:
-            1. **Sangat Alim & Berilmu**: Jika ditanya tafsir atau ayat, berikan rujukan tepercaya (seperti Tafsir Kemenag, Ibnu Katsir, atau Al-Jalalayn). Sertakan ayat-ayat pendukung atau hadits shahih yang relevan dengan rapi.
-            2. **Pendamping Praktis (Solutif)**: Berikan tips menghafal yang konkret, teruji, dan ramah mahasiswa (misalnya teknik 'tikrar', metode visualisasi, atau murajaah saku).
-            3. **Sahabat Karib Syurga**: Gunakan sapaan yang hangat seperti "Sahabat Quran", "Pecinta Al-Quran", atau "Pejuang Kalamllah". Bahasa Anda harus sopan, bersahabat, mengayom, dan membangkitkan asa spiritual ketika mereka mengeluh lelah menghafal.
-            4. **Estetika Jawaban**: Format tulisan menggunakan Markdown yang indah, tebalkan kata-kata memotivasi, gunakan bullet-points untuk keterbacaan tinggi, serta warnai dialog Anda dengan emoji yang menyejukkan (seperti 📖, 🌟, ✨, ❤️, 🤲).`,
+             Pilar Kepribadian Anda:
+             1. Sangat Alim & Berilmu: Jika ditanya tafsir atau ayat, berikan rujukan tepercaya (seperti Tafsir Kemenag, Ibnu Katsir, atau Al-Jalalayn). Sertakan ayat-ayat pendukung atau hadits shahih yang relevan dengan rapi.
+             2. Pendamping Praktis (Solutif): Berikan tips menghafal yang konkret, teruji, dan ramah mahasiswa (misalnya teknik 'tikrar', metode visualisasi, atau murajaah saku).
+             3. Sahabat Karib Syurga: Gunakan sapaan yang hangat seperti "Sahabat Quran", "Pecinta Al-Quran", atau "Pejuang Kalamllah". Bahasa Anda harus sopan, bersahabat, mengayom, dan membangkitkan asa spiritual ketika mereka mengeluh lelah menghafal.
+             4. Estetika Jawaban: Format tulisan menggunakan spasi dan paragraf yang rapi dan indah. JANGAN menggunakan tanda bintang (* atau **) sama sekali dalam format teks mana pun. Tebalkan/ganti kata penting menggunakan huruf kapital atau format tanpa tanda bintang, serta warnai dialog Anda dengan emoji yang menyejukkan (seperti 📖, 🌟, ✨, ❤️, 🤲).`,
           },
         });
 
@@ -289,33 +289,33 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
           const msg = message.toLowerCase();
           let reply = "";
           if (msg.includes("tips") || msg.includes("hafal") || msg.includes("cara")) {
-            reply = "Sahabat Quran yang dirahmati Allah, berikut adalah tips emas untuk mempermudah menghafal Al-Quran:\n\n1. **Ikhlas & Doa**: Awali dengan kebersihan niat semata-mata mencari ridha-Nya.\n2. **Metode Tikrar (Pengulangan)**: Ulangi satu baris/ayat sebanyak 20 kali sebelum lanjut.\n3. **Murojaah Terjadwal**: Gunakan fitur *Pengingat Murojaah* di aplikasi untuk konsistensi.\n4. **Pahami Makna**: Bacalah terjemahannya terlebih dahulu; hal ini memicu ingatan visual dan asosiasi pikiran.\n\nSemoga Allah memudahkan setiap langkah spiritual Anda! 📖✨";
+            reply = "Sahabat Quran yang dirahmati Allah, berikut adalah tips emas untuk mempermudah menghafal Al-Quran:\n\n1. Ikhlas & Doa: Awali dengan kebersihan niat semata-mata mencari ridha-Nya.\n2. Metode Tikrar (Pengulangan): Ulangi satu baris/ayat sebanyak 20 kali sebelum lanjut.\n3. Murojaah Terjadwal: Gunakan fitur Pengingat Murojaah di aplikasi untuk konsistensi.\n4. Pahami Makna: Bacalah terjemahannya terlebih dahulu; hal ini memicu ingatan visual dan asosiasi pikiran.\n\nSemoga Allah memudahkan setiap langkah spiritual Anda! 📖✨";
           } else if (msg.includes("jemput") || msg.includes("lelah") || msg.includes("malas") || msg.includes("bosan") || msg.includes("sulit") || msg.includes("menyerah")) {
-            reply = "Pecinta Kalamullah, adalah hal yang manusiawi jika sesekali merasa lelah atau berat. Namun ingatlah sabda Rasulullah SAW: *'Orang yang membaca Al-Qur'an dan terbata-bata padanya serta mengalami kesulitan, baginya dua pahala.'* (HR. Bukhari & Muslim).\n\nSetiap huruf yang Anda perjuangkan adalah cahaya penyejuk hati kelak. Istirahatlah sejenak, lalu mulailah kembali dengan satu ayat kecil. Kami selalu di sini menemani perjuangan mulia Anda! ❤️🤲";
+            reply = "Pecinta Kalamullah, adalah hal yang manusiawi jika sesekali merasa lelah atau berat. Namun ingatlah sabda Rasulullah SAW: 'Orang yang membaca Al-Qur'an dan terbata-bata padanya serta mengalami kesulitan, baginya dua pahala.' (HR. Bukhari & Muslim).\n\nSetiap huruf yang Anda perjuangkan adalah cahaya penyejuk hati kelak. Istirahatlah sejenak, lalu mulailah kembali dengan satu ayat kecil. Kami selalu di sini menemani perjuangan mulia Anda! ❤️🤲";
           } else if (msg.includes("arafah") || (msg.includes("puasa") && msg.includes("arafah"))) {
-            reply = "Sahabat Quran, **Puasa Arafah (9 Dzulhijjah)** memiliki keutamaan yang luar biasa! \n\nDalam hadits Riwayat Muslim No. 1162, Rasulullah SAW bersabda:\n> *'Puasa hari Arafah, aku berharap kepada Allah agar menghapus dosa setahun yang lalu dan setahun yang akan datang.'*\n\nAyat Al-Quran secara umum yang berkaitan dengan kesempurnaan hari Arafah adalah **Surah Al-Ma'idah (5) Ayat 3**:\n> *'Pada hari ini telah Kusempurnakan untukmu agamamu, dan telah Kucukupkan kepadamu nikmat-Ku, dan telah Kuridhai Islam itu jadi agama bagimu.'*\n\nKeutamaan puasa ini menggugurkan dosa dua tahun sekaligus, sebuah anugerah agung dari Allah SWT. Semoga kita dimudahkan mengamalkannya! Ada hal lain yang ingin Anda diskusikan mengenai puasa, hadits, atau ayat lainnya? 📖✨";
+            reply = "Sahabat Quran, Puasa Arafah (9 Dzulhijjah) memiliki keutamaan yang luar biasa! \n\nDalam hadits Riwayat Muslim No. 1162, Rasulullah SAW bersabda:\n\"Puasa hari Arafah, aku berharap kepada Allah agar menghapus dosa setahun yang lalu dan setahun yang akan datang.\"\n\nAyat Al-Quran secara umum yang berkaitan dengan kesempurnaan hari Arafah adalah Surah Al-Ma'idah (5) Ayat 3:\n\"Pada hari ini telah Kusempurnakan untukmu agamamu, dan telah Kucukupkan kepadamu nikmat-Ku, dan telah Kuridhai Islam itu jadi agama bagimu.\"\n\nKeutamaan puasa ini menggugurkan dosa dua tahun sekaligus, sebuah anugerah agung dari Allah SWT. Semoga kita dimudahkan mengamalkannya! Ada hal lain yang ingin Anda diskusikan mengenai puasa, hadits, atau ayat lainnya? 📖✨";
           } else if (msg.includes("puasa")) {
-            reply = "Mengenai ibadah **Puasa**, Al-Quran menjelaskan kewajiban dan keutamaannya secara indah dalam **Surah Al-Baqarah (2) Ayat 183**:\n\n> *'Wahai orang-orang yang beriman, diwajibkan atas kamu berpuasa sebagaimana diwajibkan atas orang-orang sebelum kamu agar kamu bertakwa.'*\n\nPuasa membentuk ketahanan batin (*self-control*), meningkatkan kejernihan raga, serta melatih pikiran kita agar lebih tenang dan mudah fokus dalam menghafal Al-Quran. Apakah Anda sedang menargetkan hafalan sambil berpuasa sunnah atau menjelang bulan suci? Mari kita perjuangkan bersama! 🌟📖";
+            reply = "Mengenai ibadah Puasa, Al-Quran menjelaskan kewajiban dan keutamaannya secara indah dalam Surah Al-Baqarah (2) Ayat 183:\n\n\"Wahai orang-orang yang beriman, diwrappedkan atas kamu berpuasa sebagaimana diwajibkan atas orang-orang sebelum kamu agar kamu bertakwa.\"\n\nPuasa membentuk ketahanan batin (self-control), meningkatkan kejernihan raga, serta melatih pikiran kita agar lebih tenang dan mudah fokus dalam menghafal Al-Quran. Apakah Anda sedang menargetkan hafalan sambil berpuasa sunnah atau menjelang bulan suci? Mari kita perjuangkan bersama! 🌟📖";
           } else if (msg.includes("sabar")) {
-            reply = "Sahabat Quran, **Sabar** adalah kekuatan batin teragung dalam menghadapi ujian kehidupan maupun kesulitan hafalan. Al-Quran menuntun kita dalam **Surah Al-Baqarah (2) Ayat 153**:\n\n> *'Wahai orang-orang yang beriman! Mohonlah pertolongan (kepada Allah) dengan sabar dan shalat. Sungguh, Allah beserta orang-orang yang sabar.'*\n\nIngatlah pula di **Surah Az-Zumar (39) Ayat 10**:\n> *'Hanya orang-orang yang bersabarlah yang disempurnakan pahalanya tanpa batas.'*\n\nSetiap keletihan, lupa dalam murojaah, dan perjuangan mengulang hafalan adalah ladang sabar yang sedang Allah catat pahalanya. Tetap teguh ya! 🤲💖";
+            reply = "Sahabat Quran, Sabar adalah kekuatan batin teragung dalam menghadapi ujian kehidupan maupun kesulitan hafalan. Al-Quran menuntun kita dalam Surah Al-Baqarah (2) Ayat 153:\n\n\"Wahai orang-orang yang beriman! Mohonlah pertolongan (kepada Allah) dengan sabar dan shalat. Sungguh, Allah beserta orang-orang yang sabar.\"\n\nIngatlah pula di Surah Az-Zumar (39) Ayat 10:\n\"Hanya orang-orang yang bersabarlah yang disempurnakan pahalanya tanpa batas.\"\n\nSetiap keletihan, lupa dalam murojaah, dan perjuangan mengulang hafalan adalah ladang sabar yang sedang Allah catat pahalanya. Tetap teguh ya! 🤲💖";
           } else if (msg.includes("ikhlas")) {
-            reply = "Ikhlas adalah nyawa dari setiap amal, termasuk dalam berinteraksi dengan Al-Quran. Allah berfirman dalam **Surah Al-Bayyinah (98) Ayat 5**:\n\n> *'Padahal mereka hanya diperintah menyembah Allah dengan ikhlas menaati-Nya semata-mata karena (menjalankan) agama...'* \n\nKetika kita menghafal Al-Quran murni karena mengharap rida Allah (bukan pujian makhluk), Allah akan melimpahkan keberkahan waktu serta kemudahan retensi dalam ingatan kita. Jaga selalu niat suci ini ya, Pejuang Kalamullah! ❤️📖";
+            reply = "Ikhlas adalah nyawa dari setiap amal, termasuk dalam berinteraksi dengan Al-Quran. Allah berfirman dalam Surah Al-Bayyinah (98) Ayat 5:\n\n\"Padahal mereka hanya diperintah menyembah Allah dengan ikhlas menaati-Nya semata-mata karena (menjalankan) agama...\" \n\nKetika kita menghafal Al-Quran murni karena mengharap rida Allah (bukan pujian makhluk), Allah akan melimpahkan keberkahan waktu serta kemudahan retensi dalam ingatan kita. Jaga selalu niat suci ini ya, Pejuang Kalamullah! ❤️📖";
           } else if (msg.includes("qadar") || msg.includes("qadr") || msg.includes("lailatul")) {
-            reply = "Malam kemuliaan **Lailatul Qadar** dibahas secara khusus dan indah dalam **Surah Al-Qadr (97) Ayat 1-3**:\n\n> *'Sesungguhnya Kami telah menurunkannya (Al-Quran) pada malam kemuliaan. Dan tahukah kamu apakah malam kemuliaan itu? Malam kemuliaan itu lebih baik dari seribu bulan.'*\n\nLailatul Qadar adalah momentum agung diturunkannya petunjuk abadi manusia (Al-Quran). Sangat dianjurkan untuk memperbanyak tilawah, murojaah, dan doa di sepuluh malam terakhir Ramadhan agar kita meraih kemuliaan seribu bulan ini. ✨🌙";
+            reply = "Malam kemuliaan Lailatul Qadar dibahas secara khusus dan indah dalam Surah Al-Qadr (97) Ayat 1-3:\n\n\"Sesungguhnya Kami telah menurunkannya (Al-Quran) pada malam kemuliaan. Dan tahukah kamu apakah malam kemuliaan itu? Malam kemuliaan itu lebih baik dari seribu bulan.\"\n\nLailatul Qadar adalah momentum agung diturunkannya petunjuk abadi manusia (Al-Quran). Sangat dianjurkan untuk memperbanyak tilawah, murojaah, dan doa di sepuluh malam terakhir Ramadhan agar kita meraih kemuliaan seribu bulan ini. ✨🌙";
           } else if (msg.includes("sholat") || msg.includes("shalat") || msg.includes("tahajud") || msg.includes("tahajjud")) {
-            reply = "Shalat adalah tiang agama dan interaksi harian terindah hamba dengan Sang Khalik. Mengenai anjuran shalat malam (Tahajud), Allah berfirman dalam **Surah Al-Isra' (17) Ayat 79**:\n\n> *'Dan pada sebagian malam, lakukanlah shalat tahajud (sebagai suatu ibadah) tambahan bagimu; mudah-mudahan Tuhanmu mengangkatmu ke tempat yang terpuji.'*\n\nBagi para penghafal Al-Quran, melantunkan ayat-ayat hafalannya di keheningan sepertiga malam terakhir saat shalat Tahajud adalah tips emas paling ampuh agar hafalan tersebut meresap kuat ke dalam memori jangka panjang (*mutqin*). Cobalah malam ini ya! 📖🤲";
+            reply = "Shalat adalah tiang agama dan interaksi harian terindah hamba dengan Sang Khalik. Mengenai anjuran shalat malam (Tahajud), Allah berfirman dalam Surah Al-Isra' (17) Ayat 79:\n\n\"Dan pada sebagian malam, lakukanlah shalat tahajud (sebagai suatu ibadah) tambahan bagimu; mudah-mudahan Tuhanmu mengangkatmu ke tempat yang terpuji.\"\n\nBagi para penghafal Al-Quran, melantunkan ayat-ayat hafalannya di keheningan sepertiga malam terakhir saat shalat Tahajud adalah tips emas paling ampuh agar hafalan tersebut meresap kuat ke dalam memori jangka panjang (mutqin). Cobalah malam ini ya! 📖🤲";
           } else if (msg.includes("ilmu") || msg.includes("belajar") || msg.includes("mahasiswa") || msg.includes("sekolah") || msg.includes("kuliah")) {
-            reply = "Menuntut ilmu adalah ibadah mulia yang ditinggikan derajatnya oleh Allah SWT. Al-Quran menegaskannya di **Surah Al-Mujadilah (58) Ayat 11**:\n\n> *'...Niscaya Allah akan mengangkat (derajat) orang-orang yang beriman di antaramu dan orang-orang yang diberi ilmu beberapa derajat...'* \n\nSebagai mahasiswa atau pelajar muslim, jadikanlah aktivitas belajar akademik Anda sebagai sarana dakwah, dan imbangi dengan murojaah Al-Quran harian sebagai suplemen spiritual penenang jiwa. Keduanya akan membawa keberhasilan duniawi dan ukhrawi yang seimbang! 🎓✨";
+            reply = "Menuntut ilmu adalah ibadah mulia yang ditinggikan derajatnya oleh Allah SWT. Al-Quran menegaskannya di Surah Al-Mujadilah (58) Ayat 11:\n\n\"...Niscaya Allah akan mengangkat (derajat) orang-orang yang beriman di antaramu dan orang-orang yang diberi ilmu beberapa derajat...\" \n\nSebagai mahasiswa atau pelajar muslim, jadikanlah aktivitas belajar akademik Anda sebagai sarana dakwah, dan imbangi dengan murojaah Al-Quran harian sebagai suplemen spiritual penenang jiwa. Keduanya akan membawa keberhasilan duniawi dan ukhrawi yang seimbang! 🎓✨";
           } else if (msg.includes("sedekah") || msg.includes("infaq") || msg.includes("infak") || msg.includes("zakat")) {
-            reply = "Zakat, infaq, dan sedekah adalah pembuka gerbang rezeki dan pembersih harta kesayangan kita. Allah SWT berfirman dalam **Surah Al-Baqarah (2) Ayat 261**:\n\n> *'Perumpamaan orang yang menginfakkan hartanya di jalan Allah seperti sebutir biji yang menumbuhkan tujuh tangkai, pada setiap tangkai ada seratus biji. Allah melipatgandakan bagi siapa yang Dia kehendaki...'* \n\nSedekah tidak akan mengurangi harta, justru meningkatkan keberkahan hidup, kesehatan pikiran, dan kemudahan dalam menghafal Al-Quran! 🤲💸";
+            reply = "Zakat, infaq, dan sedekah adalah pembuka gerbang rezeki dan pembersih harta kesayangan kita. Allah SWT berfirman dalam Surah Al-Baqarah (2) Ayat 261:\n\n\"Perumpamaan orang yang menginfakkan hartanya di jalan Allah seperti sebutir biji yang menumbuhkan tujuh tangkai, pada setiap tangkai ada seratus biji. Allah melipatgandakan bagi siapa yang Dia kehendaki...\"\n\nSedekah tidak akan mengurangi harta, justru meningkatkan keberkahan hidup, kesehatan pikiran, dan kemudahan dalam menghafal Al-Quran! 🤲💸";
           } else if (msg.includes("orang tua") || msg.includes("ibu") || msg.includes("bapak") || msg.includes("walidain") || msg.includes("bakti")) {
-            reply = "Berbakti kepada orang tua (*Birrul Walidain*) adalah kewajiban paling utama setelah bertauhid kepada Allah. **Surah Al-Isra' (17) Ayat 23** menerangkan:\n\n> *'Dan Tuhanmu telah memerintahkan agar kamu jangan menyembah selain Dia dan hendaklah berbuat baik kepada ibu bapakmu dengan sebaik-baiknya...'* \n\nKeistimewaan luar biasa bagi penghafal Al-Quran adalah kesempatan untuk memakaikan mahkota dan jubah kemuliaan berlapiskan cahaya di surga kelak untuk kedua orang tua mereka sebagai bukti bakti sejati. Masya Allah! 👑❤️";
+            reply = "Berbakti kepada orang tua (Birrul Walidain) adalah kewajiban paling utama setelah bertauhid kepada Allah. Surah Al-Isra' (17) Ayat 23 menerangkan:\n\n\"Dan Tuhanmu telah memerintahkan agar kamu jangan menyembah selain Dia dan hendaklah berbuat baik kepada ibu bapakmu dengan sebaik-baiknya...\"\n\nKeistimewaan luar biasa bagi penghafal Al-Quran adalah kesempatan untuk memakaikan mahkota dan jubah kemuliaan berlapiskan cahaya di surga kelak untuk kedua orang tua mereka sebagai bukti bakti sejati. Masya Allah! 👑❤️";
           } else if (msg.includes("yasin") || msg.includes("yaasin") || msg.includes("kahfi") || msg.includes("mulk") || msg.includes("waqiah") || msg.includes("waqi'ah")) {
-            reply = "Surah-surah pilihan seperti **Yasin**, **Al-Kahfi**, **Al-Mulk**, dan **Al-Waqi'ah** memiliki keutamaan hadits yang kokoh:\n\n1. **Al-Kahfi**: Dibaca hari Jumat sebagai cahaya penuntun hingga Jumat berikutnya (HR. An-Nasa'i).\n2. **Al-Mulk**: Menjadi syafaat penyelamat dari siksa kubur (HR. Tirmidzi).\n3. **Yasin**: Berfungsi sebagai salah satu jantung Al-Quran dan ketenteraman hati.\n\nMemilih surah-surah ini untuk memulai hafalan Anda adalah langkah awal yang sangat berkah! 📖✨";
+            reply = "Surah-surah pilihan seperti Yasin, Al-Kahfi, Al-Mulk, dan Al-Waqi'ah memiliki keutamaan hadits yang kokoh:\n\n1. Al-Kahfi: Dibaca hari Jumat sebagai cahaya penuntun hingga Jumat berikutnya (HR. An-Nasa'i).\n2. Al-Mulk: Menjadi syafaat penyelamat dari siksa kubur (HR. Tirmidzi).\n3. Yasin: Berfungsi sebagai salah satu jantung Al-Quran dan ketenteraman hati.\n\nMemilih surah-surah ini untuk memulai hafalan Anda adalah langkah awal yang sangat berkah! 📖✨";
           } else if (msg.includes("?") || msg.includes("apa") || msg.includes("bagaimana") || msg.includes("siapa") || msg.includes("mengapa") || msg.includes("kenapa") || msg.includes("jelaskan") || msg.includes("sebutkan") || msg.includes("tanya") || msg.includes("soal") || msg.includes("ayat") || msg.includes("hadits") || msg.includes("hadis") || msg.includes("keutamaan")) {
-            reply = "Masya Allah, pertanyaan yang sangat mendidik tentang khazanah Al-Quran & keislaman! 📖✨\n\nSebagai asisten pribadi **QuranMemo AI**, saya sangat senang menemani diskusi Anda. Meskipun saat ini kustomisasi AI utama Anda sedang dialihkan ke mode cadangan (dikarenakan limitasi kuota atau API key), berikut adalah rangkuman prinsip dasar Al-Quran berdasar pencarian Anda:\n\n1. **Rujuklah Tafsir Utama (Ibnu Katsir/Kemenag)** untuk memperoleh kedalaman sanad makna yang murni.\n2. **Tanyakan kepada Ustadz/Ustadzah** terdekat apabila ada ketidakpastian hukum fiqih.\n3. **Amalkan maknanya** meskipun satu baris kebaikan kecil setiap harinya.\n\nAnda bisa mencoba mengetik kata murni seperti **'tips'** untuk bimbingan hafalan, **'puasa'** / **'arafah'** / **'sabar'** / **'sholat'** / **'ilmu'** untuk ulasan hikmah spesifik! Tetap istiqomah di jalan cahaya Al-Quran ya! 📖🌟";
+            reply = "Masya Allah, pertanyaan yang sangat mendidik tentang khazanah Al-Quran & keislaman! 📖✨\n\nSebagai asisten pribadi QuranMemo AI, saya sangat senang menemani diskusi Anda. Meskipun saat ini kustomisasi AI utama Anda sedang dialihkan ke mode cadangan (dikarenakan limitasi kuota atau API key), berikut adalah rangkuman prinsip dasar Al-Quran berdasar pencarian Anda:\n\n1. Rujuklah Tafsir Utama (Ibnu Katsir/Kemenag) untuk memperoleh kedalaman sanad makna yang murni.\n2. Tanyakan kepada Ustadz/Ustadzah terdekat apabila ada ketidakpastian hukum fiqih.\n3. Amalkan maknanya meskipun satu baris kebaikan kecil setiap harinya.\n\nAnda bisa mencoba mengetik kata murni seperti 'tips' untuk bimbingan hafalan, 'puasa' / 'arafah' / 'sabar' / 'sholat' / 'ilmu' untuk ulasan hikmah spesifik! Tetap istiqomah di jalan cahaya Al-Quran ya! 📖🌟";
           } else {
-            reply = "Masya Allah, terima kasih telah menyapa QuranMemo AI! Di tengah padatnya aktivitas belajar, meluangkan batin untuk Al-Quran adalah investasi terbaik dunia-akhirat.\n\nAda yang bisa saya bantu hari ini? Anda bisa meminta **tips menghafal**, penjelasan ayat, atau bimbingan murojaah interaktif! ✨📖";
+            reply = "Masya Allah, terima kasih telah menyapa QuranMemo AI! Di tengah padatnya aktivitas belajar, meluangkan batin untuk Al-Quran adalah investasi terbaik dunia-akhirat.\n\nAda yang bisa saya bantu hari ini? Anda bisa meminta tips menghafal, penjelasan ayat, atau bimbingan murojaah interaktif! ✨📖";
           }
           return res.json({ result: reply });
         }
@@ -354,19 +354,19 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
         const { isKeyError, isQuotaError } = checkErrorType(innerErr);
         if (isKeyError || isQuotaError) {
           console.warn(`[AI WARN] serving search fallback due to ${isKeyError ? 'unconfigured key' : 'quota limit'}.`);
-          const fallbackSearch = `### 🔍 Hasil Pencarian Khidmat (Mode Cadangan)
+          const fallbackSearch = `### Hasil Pencarian Khidmat (Mode Cadangan)
 
-Menanggapi pencarian Anda tentang topik **"${query}"**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+Menanggapi pencarian Anda tentang topik "${query}", berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
 
-1. **Surah Al-Baqarah (2) Ayat 45**:
-   > *"Jadikanlah sabar dan shalat sebagai penolongmu. Dan sesungguhnya yang demikian itu sungguh berat, kecuali bagi orang-orang yang khusyu'."*
-2. **Surah Al-Insyirah (94) Ayat 6**:
-   > *"Sesungguhnya sesudah kesulitan itu ada kemudahan."*
+1. Surah Al-Baqarah (2) Ayat 45:
+   "Jadikanlah sabar dan shalat sebagai penolongmu. Dan sesungguhnya yang demikian itu sungguh berat, kecuali bagi orang-orang yang khusyu'."
+2. Surah Al-Insyirah (94) Ayat 6:
+   "Sesungguhnya sesudah kesulitan itu ada kemudahan."
 
-#### 💡 Hikmah Spiritual & Pelajaran Praktis
+#### Hikmah Spiritual & Pelajaran Praktis
 Di tengah padatnya dunia perkuliahan dan beratnya godaan keseharian, kesabaran batin, shalat khusyu', serta keyakinan mutlak akan pertolongan-Nya adalah bekal paling utama bagi seorang penuntut ilmu.
 
-*Catatan: Hasil pencarian saat ini disajikan dalam mode aman cadangan ramah kuota. Silakan terus berselancar di surah lainnya menggunakan tab Semua Surah! 📖✨*`;
+Catatan: Hasil pencarian saat ini disajikan dalam mode aman cadangan ramah kuota. Silakan terus berselancar di surah lainnya menggunakan tab Semua Surah! 📖✨`;
           return res.json({ result: fallbackSearch });
         }
         throw innerErr;
@@ -385,10 +385,10 @@ Di tengah padatnya dunia perkuliahan dan beratnya godaan keseharian, kesabaran b
         const prompt = `Berikan ringkasan eksekutif tingkat lanjut (overpowered context) berisi hikmah-hikmah emas tentang Surah ${surahName}. 
         Gunakan deskripsi awal ini sebagai referensi sejarah/dasar: ${description}.
         Fokuskan penjelasan pada aspek-aspek berikut:
-        1. **Inti Sari Pesan Utama Surah**: Pesan tauhid, sejarah, atau tasyri' utama di surah ini.
-        2. **Mengapa Surah ini Sangat Penting dihafal**: Barakah khusus, fadilah hadits shahih, atau kegunaan spiritualnya dalam shalat dan kehidupan batin.
-        3. **Pelajaran Emas untuk Kehidupan Mahasiswa Modern**: Cara mengaitkan ajaran surah ini dengan integritas akademik, manajemen waktu, relasi sosial, atau ketahanan mental generasi masa kini.
-        Gunakan format markdown yang menawan dengan list, bullet-points, dan penekanan teks tebal yang menarik perhatian pembaca.`;
+        1. Inti Sari Pesan Utama Surah: Pesan tauhid, sejarah, atau tasyri' utama di surah ini.
+        2. Mengapa Surah ini Sangat Penting dihafal: Barakah khusus, fadilah hadits shahih, atau kegunaan spiritualnya dalam shalat dan kehidupan batin.
+        3. Pelajaran Emas untuk Kehidupan Mahasiswa Modern: Cara mengaitkan ajaran surah ini dengan integritas akademik, manajemen waktu, relasi sosial, atau ketahanan mental generasi masa kini.
+        Gunakan format tulisan yang menawan, JANGAN menggunakan tanda bintang (* atau **) sama sekali dalam format tulisan Anda. Gunakan bullet-points standar (- atau angka) tanpa asterisks.`;
 
         const response = await ai.models.generateContent({
           model: "gemini-3.5-flash",
@@ -404,21 +404,21 @@ Di tengah padatnya dunia perkuliahan dan beratnya godaan keseharian, kesabaran b
         const { isKeyError, isQuotaError } = checkErrorType(innerErr);
         if (isKeyError || isQuotaError) {
           console.warn(`[AI WARN] serving summary fallback due to ${isKeyError ? 'unconfigured key' : 'quota limit'}.`);
-          const fallbackSummary = `### 📝 Hikmah Emas Surah ${surahName}
+          const fallbackSummary = `### Hikmah Emas Surah ${surahName}
 
-Berikut kami sajikan intisari hikmah dan keutamaan mengagumkan dari **Surah ${surahName}**:
+Berikut kami sajikan intisari hikmah dan keutamaan mengagumkan dari Surah ${surahName}:
 
-#### 1. **Pesan Utama Surah**
+#### 1. Pesan Utama Surah
 Surah ${surahName} (${description || "merupakan bagian penting dari kalamullah"}) mengajarkan kita tentang tauhid yang kokoh, keteguhan hati, kepasrahan batin, serta janji pertolongan Allah yang pasti bagi orang-orang penyabar.
 
-#### 2. **Keutamaan Menghafal Surah Ini**
+#### 2. Keutamaan Menghafal Surah Ini
 Menghafal Surah ${surahName} merekatkan kedamaian di hati. Selain memperkaya khusyu' dalam shalat, melafalkannya harian adalah sarana bermunajat yang menenangkan pikiran.
 
-#### 3. **Pelajaran untuk Mahasiswa/Pelajar Masa Kini**
-* **Ketangguhan Mental**: Meyakinkan batin kita bahwa rintangan akademis serumit apa pun pasti disertai dengan kemudahan dari Allah SWT.
-* **Manajemen Harapan**: Membalikkan fokus kerja keras kita semata-mata demi keberkahan, bukan sekadar mengejar status keduniawian semu.
+#### 3. Pelajaran untuk Mahasiswa/Pelajar Masa Kini
+- Ketangguhan Mental: Meyakinkan batin kita bahwa rintangan akademis serumit apa pun pasti disertai dengan kemudahan dari Allah SWT.
+- Manajemen Harapan: Membalikkan fokus kerja keras kita semata-mata demi keberkahan, bukan sekadar mengejar status keduniawian semu.
 
-*Nikmati setiap detik kebersamaan Anda bersama kalam suci di QuranMemo AI! 🌟📖*`;
+Nikmati setiap detik kebersamaan Anda bersama kalam suci di QuranMemo AI! 🌟📖`;
           return res.json({ result: fallbackSummary });
         }
         throw innerErr;
@@ -450,7 +450,7 @@ Menghafal Surah ${surahName} merekatkan kedamaian di hati. Selain memperkaya khu
 Tugas utama Anda adalah menguji, membimbing, dan mendampingi hafalan Al-Quran pengguna.
 
 Aturan Utama & Gaya Jawaban:
-1. **SANGAT RINGKAS & TO THE POINT**: JANGAN menulis penjelasan yang terlalu panjang atau bertele-tele. Jawab dalam 2 sampai maksimal 4 kalimat saja! Tetap padat dan fokus pada ujaran hafalan.
+1. SANGAT RINGKAS & TO THE POINT: JANGAN menulis penjelasan yang terlalu panjang atau bertele-tele. Jawab dalam 2 sampai maksimal 4 kalimat saja! Tetap padat dan fokus pada ujaran hafalan. JANGAN gunakan tanda bintang (* atau **) sama sekali dalam dialog Anda.
 2. Jika pengguna mengekspresikan huffadh/hafalan baru seperti "Saya hafal [Surah] ayat [X]-[Y]" (misal: "Saya hafal Al-Mulk ayat 1-10"), maka:
    - Sambut dengan hangat dan langsung tes potongan ayat pertamanya (atau di tengah range) agar user menyambungnya. Contoh: "Masya Allah, luar biasa! Mari kita uji. Coba sambung ayat 1-2 Al-Mulk ini: 'Tabaarakal ladzii biyadihil mulku wa huwa 'alaa...'?"
 3. Bila pengguna menjawab sambungan ayat:
@@ -475,16 +475,16 @@ Aturan Utama & Gaya Jawaban:
           
           if (msg.includes("mulk") || msg.includes("tabarak")) {
             if (msg.includes("1-10") || msg.includes("1") || msg.includes("hafal")) {
-              reply = "Alhamdulillah, keren sekali hafalannya! Yuk, kita uji Surah Al-Mulk Anda. Coba sambung potongan ayat 1 ini:\n\n> *'Tabaarakal ladzii biyadihil mulku wa huwa 'alaa...'*\n\nKetik kelanjutannya ya! ✨📖";
+              reply = "Alhamdulillah, keren sekali hafalannya! Yuk, kita uji Surah Al-Mulk Anda. Coba sambung potongan ayat 1 ini:\n\n\"Tabaarakal ladzii biyadihil mulku wa huwa 'alaa...\"\n\nKetik kelanjutannya ya! ✨📖";
             } else if (msg.includes("kulli") || msg.includes("syai") || msg.includes("qadiir") || msg.includes("qodir")) {
-              reply = "Masya Allah, hebat! Lanjutan Anda benar sekali: **'kulli syai-in qadiir'**. \n\nSekarang coba sambung ayat ke-2 nya:\n\n> *'Alladzii khalaqal mauta wal hayaata liyabluwakum...'*\n\nSemangat murojaah! 👏✨";
+              reply = "Masya Allah, hebat! Lanjutan Anda benar sekali: \"kulli syai-in qadiir\". \n\nSekarang coba sambung ayat ke-2 nya:\n\n\"Alladzii khalaqal mauta wal hayaata liyabluwakum...\"\n\nSemangat murojaah! 👏✨";
             } else {
               reply = "Masya Allah! Hafalan Surah Al-Mulk Anda sangat berkah. Terus ulangi hafalan Anda ya! Ada ayat lain atau surah lain yang ingin disetor? 📖✨";
             }
           } else if (msg.includes("naba") || msg.includes("amma")) {
-            reply = "Alhamdulillah! Surah An-Naba' sangat istimewa. Coba sambung ayat pertama ini:\n\n> *'Amma yatasaaa-aluun. 'Anil...?'*\n\nLanjutkan dengan gagah berani! 📖✨";
+            reply = "Alhamdulillah! Surah An-Naba' sangat istimewa. Coba sambung ayat pertama ini:\n\n\"Amma yatasaaa-aluun. 'Anil...?\"\n\nLanjutkan dengan gagah berani! 📖✨";
           } else {
-            reply = "Masya Allah, niat murojaahmu luar biasa! Sebutkan nama surahnya (misal: **Al-Mulk 1-10** atau **An-Naba 1-5**).\n\nSaya siap mengetes hafalan Anda secara bertahap supaya makin kuat! 📖✨";
+            reply = "Masya Allah, niat murojaahmu luar biasa! Sebutkan nama surahnya (misal: Al-Mulk 1-10 atau An-Naba 1-5).\n\nSaya siap mengetes hafalan Anda secara bertahap supaya makin kuat! 📖✨";
           }
           return res.json({ result: reply });
         }

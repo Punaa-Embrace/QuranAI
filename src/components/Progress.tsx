@@ -312,7 +312,7 @@ export default function Progress({ onSelectSurah }: { onSelectSurah?: (id: numbe
             className="space-y-4 pt-2"
           >
             {/* 30 Juz Compact Grid Layout */}
-            <div className="grid grid-cols-6 gap-2 pt-1 font-sans">
+            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-2 pt-1 font-sans">
               {Array.from({ length: 30 }).map((_, i) => {
                 const juzId = i + 1;
                 const status = getJuzCombinedStatus(juzId);
@@ -462,7 +462,7 @@ export default function Progress({ onSelectSurah }: { onSelectSurah?: (id: numbe
             <p className="text-xs text-gray-400 mt-1">Mulai tandai ayat yang sudah dihafal!</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {items.map((item, idx) => (
               <motion.div 
                 key={item.surahId}

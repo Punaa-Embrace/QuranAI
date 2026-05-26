@@ -141,7 +141,7 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
       {/* NEW grid menu requested by user! */}
       <div className="space-y-4">
         <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Pilihan Menu Utama</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           
           {/* Card 1: Tadarus / Quran */}
           <motion.button

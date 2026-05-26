@@ -8,7 +8,7 @@ export default function Layout({ children, currentTab, onTabChange }: {
   onTabChange: (tab: string) => void;
 }) {
   return (
-    <div className="flex flex-col min-h-screen bg-surface max-w-md mx-auto relative shadow-2xl border-x border-gray-100">
+    <div className="flex flex-col min-h-screen bg-surface w-full max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto relative shadow-2xl border-x border-gray-100">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-3.5 flex items-center justify-between">
         <h1 className="text-xl font-bold text-primary flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center shadow-md shadow-emerald-950/10 border border-amber-400">
@@ -36,7 +36,7 @@ export default function Layout({ children, currentTab, onTabChange }: {
         {children}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
+      <nav className="fixed bottom-0 left-0 right-0 w-full max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto bg-white border-t border-gray-100 px-6 md:px-12 py-4 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
         <NavButton 
           active={currentTab === 'home'} 
           icon={<HomeIcon size={22} />} 

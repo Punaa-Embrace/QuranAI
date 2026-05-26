@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { AnimatePresence } from "motion/react";
+import SplashScreen from "./components/SplashScreen";
 import Layout from "./components/Layout";
 import Home from "./components/Home";
 import SurahList from "./components/SurahList";
@@ -8,6 +10,7 @@ import AICompanion from "./components/AICompanion";
 import QuranQuizGame from "./components/QuranQuizGame";
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [currentTab, setCurrentTab] = useState("home");
   const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
   const [initialAiMode, setInitialAiMode] = useState(false);
@@ -76,12 +79,20 @@ export default function App() {
   };
 
   return (
-    <Layout currentTab={currentTab} onTabChange={(tab) => {
-      setCurrentTab(tab);
-      setSelectedSurah(null); // Reset when switching tabs
-      setInitialAiMode(false);
-    }}>
-      {renderContent()}
-    </Layout>
+    <>
+      <AnimatePresence>
+        {showSplash && (
+          <SplashScreen onFinish={() => setShowSplash(false)} />
+        )}
+      </AnimatePresence>
+
+      <Layout currentTab={currentTab} onTabChange={(tab) => {
+        setCurrentTab(tab);
+        setSelectedSurah(null); // Reset when switching tabs
+        setInitialAiMode(false);
+      }}>
+        {renderContent()}
+      </Layout>
+    </>
   );
 }

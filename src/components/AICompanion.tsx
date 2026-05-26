@@ -137,7 +137,7 @@ export default function AICompanion({ initialMode = "coach" }: { initialMode?: "
           </motion.div>
 
           {/* Chat Interface */}
-          <div className="flex-1 flex flex-col h-[400px] bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex-1 flex flex-col h-[420px] md:h-[550px] bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="bg-gray-50 p-4 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-accent" />

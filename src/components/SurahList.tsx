@@ -191,7 +191,7 @@ export default function SurahList({ onSelect, initialAiMode = false }: { onSelec
           <p>Memuat daftar surah...</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.length === 0 ? (
             <div className="text-center py-16 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
               <p className="text-gray-400 text-sm">Tidak menemukan surah yang cocok.</p>

@@ -399,7 +399,7 @@ export default function QuranQuizGame({ onBack }: { onBack: () => void }) {
                 <h4 className="text-xs font-black uppercase tracking-wider">Tahap 2: Pilih Mode Permainan</h4>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* Mode 1: Sambung Ayat */}
                 <motion.button
@@ -534,7 +534,7 @@ export default function QuranQuizGame({ onBack }: { onBack: () => void }) {
 
               {/* GAME mode 1: Sambung Ayat (Multi-choices) */}
               {gameMode === "sambung_ayat" && (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {questions[currentIdx]?.options.map((option: any, index) => {
                     const isSelected = selectedAnswer === option;
                     const isThisCorrect = option === questions[currentIdx].correctAnswer;
