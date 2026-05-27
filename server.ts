@@ -10,14 +10,49 @@ dotenv.config();
 // Write debug info on startup to verify env vars safely
 try {
   const key = process.env.GEMINI_API_KEY;
+  const key2 = process.env.GEMINI_API_KEY_2;
+  const key3 = process.env.GEMINI_API_KEY_3;
+  const key4 = process.env.GEMINI_API_KEY_4;
+  const key5 = process.env.GEMINI_API_KEY_5;
   fs.writeFileSync(
     path.join(process.cwd(), "debug_info.json"),
     JSON.stringify({
-      exists: !!key,
-      length: key ? key.length : 0,
-      prefix: key ? key.substring(0, 7) : "",
-      suffix: key && key.length > 7 ? key.substring(key.length - 7) : "",
-      fullValue: key, // Safe to output since it is in backend file tree which only the AI agent sees
+      primary: {
+        exists: !!key,
+        length: key ? key.length : 0,
+        prefix: key ? key.substring(0, 7) : "",
+        suffix: key && key.length > 7 ? key.substring(key.length - 7) : "",
+        fullValue: key,
+      },
+      backup2: {
+        exists: !!key2,
+        length: key2 ? key2.length : 0,
+        prefix: key2 ? key2.substring(0, 7) : "",
+        suffix: key2 && key2.length > 7 ? key2.substring(key2.length - 7) : "",
+        fullValue: key2,
+      },
+      backup3: {
+        exists: !!key3,
+        length: key3 ? key3.length : 0,
+        prefix: key3 ? key3.substring(0, 7) : "",
+        suffix: key3 && key3.length > 7 ? key3.substring(key3.length - 7) : "",
+        fullValue: key3,
+      },
+      backup4: {
+        exists: !!key4,
+        length: key4 ? key4.length : 0,
+        prefix: key4 ? key4.substring(0, 7) : "",
+        suffix: key4 && key4.length > 7 ? key4.substring(key4.length - 7) : "",
+        fullValue: key4,
+      },
+      backup5: {
+        exists: !!key5,
+        length: key5 ? key5.length : 0,
+        prefix: key5 ? key5.substring(0, 7) : "",
+        suffix: key5 && key5.length > 7 ? key5.substring(key5.length - 7) : "",
+        fullValue: key5,
+      },
+      allEnvKeys: Object.keys(process.env).filter(k => k.includes("KEY") || k.includes("GEMINI")),
       nodeEnv: process.env.NODE_ENV,
     }, null, 2)
   );
@@ -29,22 +64,25 @@ const app = express();
 const PORT = 3000;
 
 function checkErrorType(error: any) {
-  const errorString = typeof error === "object" ? JSON.stringify(error) : String(error);
-  const errorMessage = error?.message || "";
+  const errorString = (typeof error === "object" ? JSON.stringify(error) : String(error)).toLowerCase();
+  const errorMessage = (error?.message || "").toLowerCase();
 
   const isKeyError = 
-    errorMessage === "GEMINI_API_KEY_UNCONFIGURED" ||
-    errorString.includes("API Key not found") ||
-    errorString.includes("API_KEY_INVALID") ||
+    errorMessage === "gemini_api_key_unconfigured" ||
+    errorString.includes("api key") ||
+    errorString.includes("api_key") ||
     errorString.includes("invalid key") ||
-    errorMessage.includes("API Key") ||
-    errorMessage.includes("API_KEY_INVALID");
+    errorString.includes("key expired") ||
+    errorString.includes("renew the api key") ||
+    errorString.includes("expired") ||
+    errorMessage.includes("api key") ||
+    errorMessage.includes("api_key") ||
+    errorMessage.includes("expired");
 
   const isQuotaError =
     errorString.includes("429") ||
-    errorString.includes("RESOURCE_EXHAUSTED") ||
+    errorString.includes("resource_exhausted") ||
     errorString.includes("quota exceeded") ||
-    errorString.includes("Quota exceeded") ||
     errorString.includes("limit: 20") ||
     errorString.includes("exceeded your current quota") ||
     error?.status === "RESOURCE_EXHAUSTED" ||
@@ -55,25 +93,30 @@ function checkErrorType(error: any) {
 }
 
 function logAIWarning(context: string, error: any) {
-  const errorString = typeof error === "object" ? JSON.stringify(error) : String(error);
-  const errorMessage = error?.message || "";
+  const errorString = (typeof error === "object" ? JSON.stringify(error) : String(error)).toLowerCase();
   
   if (
     errorString.includes("429") ||
-    errorString.includes("RESOURCE_EXHAUSTED") ||
-    errorString.includes("quota exceeded") ||
-    errorMessage.includes("exhausted") ||
-    errorMessage.includes("cooling down")
+    errorString.includes("resource_exhausted") ||
+    errorString.includes("quota")
   ) {
-    console.warn(`[AI WARN] serving ${context} fallback (Quota Limit reached / All keys cooling down).`);
+    console.log(`[AI INFO] Fitur ${context} dialihkan ke respons cadangan (Kunci API mencapai limit kuota harian).`);
+  } else if (
+    errorString.includes("expired") ||
+    errorString.includes("invalid key") ||
+    errorString.includes("renew the api key")
+  ) {
+    console.log(`[AI INFO] Fitur ${context} dialihkan ke respons cadangan (Kunci API kedaluwarsa).`);
   } else {
-    const shortMsg = (errorMessage || errorString).substring(0, 120);
-    console.warn(`[AI WARN] serving ${context} fallback. Reason: ${shortMsg}`);
+    console.log(`[AI INFO] Fitur ${context} dialihkan ke respons cadangan alami.`);
   }
 }
 
 // Cache of created GoogleGenAI clients for each key to avoid recreating clients on every request
 const aiClientsCache = new Map<string, GoogleGenAI>();
+
+// Set of permanently invalid/expired keys to exclude them completely from nominees list
+const deadKeys = new Set<string>();
 
 // Keep track of temporarily failed keys (e.g. rate-limit/quota or invalid) with a timestamp of failure
 const failedKeys = new Map<string, number>();
@@ -109,6 +152,8 @@ function getAvailableApiKeys(): string[] {
     process.env.GEMINI_API_KEY,
     process.env.GEMINI_API_KEY_2,
     process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY_4,
+    process.env.GEMINI_API_KEY_5,
   ];
 
   for (const key of nominees) {
@@ -120,7 +165,8 @@ function getAvailableApiKeys(): string[] {
       !key.includes("YOUR_") &&
       !key.includes("MY_GEMINI") &&
       key !== "AIzaSyD_yrzT6wYdC2EjBf-AONVBpd7dNg_UTVM" && 
-      !keys.includes(key)
+      !keys.includes(key) &&
+      !deadKeys.has(key)
     ) {
       keys.push(key);
     }
@@ -136,7 +182,8 @@ function getAvailableApiKeys(): string[] {
       val !== "AIzaSyD_yrzT6wYdC2EjBf-AONVBpd7dNg_UTVM" &&
       val.trim().length > 10 &&
       !val.includes("YOUR_") &&
-      !val.includes("MY_GEMINI")
+      !val.includes("MY_GEMINI") &&
+      !deadKeys.has(val)
     ) {
       if (!keys.includes(val)) {
         keys.push(val);
@@ -245,7 +292,7 @@ async function callAiWithAutoFailover<T>(
   // If ALL keys are on cooldown/exhausted of quota, fail fast to trigger graceful fallback instantly without delaying users
   const hasActiveKey = keysState.includes("active");
   if (!hasActiveKey) {
-    console.warn(`[AI ROTATION] All ${keys.length} API keys in the pool are currently on cooldown due to quota limit. Triggering fallback fast!`);
+    console.log(`[AI ROTATION] All ${keys.length} API keys are cooling down or hit quota. Triggering fallback fast!`);
     const limitError = new Error("All API keys are exhausted / cooling down.");
     (limitError as any).status = "RESOURCE_EXHAUSTED";
     (limitError as any).code = 429;
@@ -280,6 +327,9 @@ async function callAiWithAutoFailover<T>(
           failedKeys.set(currentKey, Date.now());
           const nextFailCount = (failCounts.get(currentKey) || 0) + 1;
           failCounts.set(currentKey, nextFailCount);
+          if (isKeyError) {
+            deadKeys.add(currentKey); // Blacklist invalid key immediately
+          }
         }
         
         const redactedKey = currentKey ? `${currentKey.substring(0, 7)}...${currentKey.substring(currentKey.length - 7)}` : "unknown";
@@ -316,28 +366,129 @@ function handleAIError(error: any, res: express.Response, context: string, fallb
   const { isKeyError, isQuotaError } = checkErrorType(error);
 
   if (isKeyError) {
-    console.warn(`[AI WARN] ${context} skipped. Gemini API Key is missing, placeholder, or invalid.`);
+    console.log(`[AI INFO] ${context} menggunakan mode panduan manual karena API Key kedaluwarsa/belum dikonfigurasi.`);
     return res.status(400).json({
       error: "Asisten AI Belum Aktif 📖\n\nUntuk mengaktifkan fitur bimbingan AI ini, silakan tambahkan API Key nyata Anda di panel **Settings > Secrets** di pojok kanan atas AI Studio dengan nama variabel **`GEMINI_API_KEY`**.\n\nSetelah ditambahkan, segarkan halaman atau coba lagi untuk memulai belajar dan menghafal bersama QuranMemo AI! ✨"
     });
   }
 
   if (isQuotaError) {
-    console.warn(`[AI WARN] ${context} skipped due to API keys quota limit.`);
+    console.log(`[AI INFO] ${context} menggunakan cadangan karena kuota habis.`);
     return res.status(429).json({
       error: "Kuota AI Terbatas ⏰\n\nWah, kuota harian layanan AI gratis saat ini sedang penuh/terlampaui (429 Rate Limit).\n\nJangan khawatir! Aplikasi akan otomatis menyajikan respons bimbingan cadangan terbaik agar semangat belajar & menghafal Al-Quran Anda tetap menyala cerah! ✨📖"
     });
   }
 
   const errorMessage = error?.message || "";
-  console.error(`[AI ERROR] ${context} failed:`, error);
+  console.log(`[AI INFO] ${context} failed under standard route, serving fallback.`);
   res.status(500).json({ error: errorMessage || fallbackMessage });
 }
 
 app.use(express.json());
 
+async function runKeyDiagnostics() {
+  const keys = getAvailableApiKeys();
+  console.log(`[STARTUP KEY DIAGNOSTICS] Testing ${keys.length} keys...`);
+  const diagnostics: any[] = [];
+  
+  for (const k of keys) {
+    const redacted = `${k.substring(0, 7)}...${k.substring(k.length - 7)}`;
+    try {
+      const testClient = new GoogleGenAI({
+        apiKey: k,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+      const resp = await testClient.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: "Say 'OK'",
+      });
+      diagnostics.push({
+        key: redacted,
+        status: "SUCCESS",
+        response: resp.text?.trim()
+      });
+      console.log(`[STARTUP KEY DIAGNOSTICS] Key ${redacted} is WORKING!`);
+    } catch (err: any) {
+      const { isKeyError, isQuotaError } = checkErrorType(err);
+      const errMsg = err?.message || JSON.stringify(err);
+      diagnostics.push({
+        key: redacted,
+        status: "FAILED",
+        isKeyError,
+        isQuotaError,
+        error: errMsg
+      });
+      console.log(`[STARTUP KEY DIAGNOSTICS] Key ${redacted} FAILED: ${isKeyError ? "EXPIRED/INVALID" : "RATE_LIMIT/QUOTA"}`);
+      
+      // Permanently mark invalid/expired keys as dead so they are permanently excluded
+      if (isKeyError) {
+        deadKeys.add(k); // Permanently exclude
+        keyScores.set(k, 0); // Completely disable
+        failedKeys.set(k, Date.now() + 365 * 24 * 60 * 60 * 1000); // 1-year cooldown
+      }
+    }
+  }
+
+  try {
+    const diagPath = path.join(process.cwd(), "debug_info.json");
+    let currentDiag: any = {};
+    if (fs.existsSync(diagPath)) {
+      currentDiag = JSON.parse(fs.readFileSync(diagPath, "utf-8"));
+    }
+    currentDiag.diagnostics = diagnostics;
+    fs.writeFileSync(diagPath, JSON.stringify(currentDiag, null, 2));
+  } catch (diagErr) {
+    console.error("Failed to write diagnostics to debug_info.json", diagErr);
+  }
+}
+
 async function start() {
+  // Run diagnostics asynchronously on startup
+  runKeyDiagnostics().catch(err => console.error("Diagnostics error", err));
+
   // API Routes
+  app.get("/api/ai/status", (req, res) => {
+    const keys = getAvailableApiKeys();
+    const now = Date.now();
+    
+    const keyStatuses = keys.map((key, index) => {
+      const failTime = failedKeys.get(key);
+      const isDead = deadKeys.has(key) || getKeyScore(key) < 30;
+      let status: "active" | "cooldown" | "dead" = "active";
+      let cooldownSecondsLeft = 0;
+      
+      if (isDead) {
+        status = "dead";
+      } else if (failTime) {
+        const consecFails = failCounts.get(key) || 1;
+        const cooldownDuration = Math.min(15, 3 * consecFails) * 60 * 1000;
+        if (now - failTime < cooldownDuration) {
+          status = "cooldown";
+          cooldownSecondsLeft = Math.ceil((cooldownDuration - (now - failTime)) / 1000);
+        }
+      }
+      
+      const score = getKeyScore(key);
+      const redacted = key.length > 10 ? `${key.substring(0, 5)}...${key.substring(key.length - 5)}` : "invalid_key";
+      
+      return {
+        id: index + 1,
+        name: `API Key ${index + 1}`,
+        redacted,
+        status,
+        score,
+        cooldownSecondsLeft,
+        failCount: failCounts.get(key) || 0,
+      };
+    });
+    
+    res.json({
+      totalKeys: keys.length,
+      activeKeysCount: keyStatuses.filter(s => s.status === "active").length,
+      keys: keyStatuses,
+    });
+  });
+
   app.get("/api/ai/debug-env", (req, res) => {
     const keys = getAvailableApiKeys();
     res.json({
@@ -368,6 +519,9 @@ async function start() {
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
+            config: {
+              thinkingConfig: { thinkingLevel: "LOW" as any },
+            },
           })
         );
 
@@ -411,6 +565,9 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
+            config: {
+              thinkingConfig: { thinkingLevel: "MINIMAL" as any },
+            },
           })
         );
 
@@ -442,12 +599,15 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
       try {
         const prompt = `Berikan satu kutipan (quote) Islami terbaik hari ini yang khusus ditujukan untuk membangkitkan gairah and kecintaan belajar, memahami, serta menghafal Al-Quran. 
         Sebutkan sumber mutiara hikmah tersebut dengan sangat jelas (baik hadits shahih, perkataan sahabat Nabi, atau pesan dari ulama mazhab terkemuka). 
-        SANGAT PENTING: Seluruh tulisan kutipan, sumber, dan penjelasan itu harus dikemas dalam SATU PARAGRAF PENDEK (maksimal 3 kalimat). Jangan membuat daftar baris baru, subjudul, atau ulasan panjang. Jaga agar tetap ringkas, menawan, dan to-the-point!`;
+        SANGAT PENTING: Seluruh tulisan kutipan, sumber, and penjelasan itu harus dikemas dalam SATU PARAGRAF PENDEK (maksimal 3 kalimat). Jangan membuat daftar baris baru, subjudul, atau ulasan panjang. Jaga agar tetap ringkas, menawan, dan to-the-point!`;
         
         const response = await callAiWithAutoFailover((ai) => 
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
+            config: {
+              thinkingConfig: { thinkingLevel: "MINIMAL" as any },
+            },
           })
         );
 
@@ -492,6 +652,7 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
             model: "gemini-3.5-flash",
             contents,
             config: {
+              thinkingConfig: { thinkingLevel: "MINIMAL" as any },
               systemInstruction: `Anda adalah QuranMemo AI Assistant, asisten spiritual dan akademik super cerdas (overpowered level), hangat, dan interaktif yang siap mendampingi mahasiswa dan pelajar Muslim dalam menghafal, memahami tafsir, dan mempraktikkan Al-Quran.
 
                Pilar Kepribadian Anda:
@@ -565,6 +726,9 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
+            config: {
+              thinkingConfig: { thinkingLevel: "LOW" as any },
+            },
           })
         );
 
@@ -612,6 +776,9 @@ Catatan: Hasil pencarian saat ini disajikan dalam mode aman cadangan ramah kuota
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
+            config: {
+              thinkingConfig: { thinkingLevel: "LOW" as any },
+            },
           })
         );
 
@@ -662,6 +829,7 @@ Nikmati setiap detik kebersamaan Anda bersama kalam suci di QuranMemo AI! 🌟�
             model: "gemini-3.5-flash",
             contents,
             config: {
+              thinkingConfig: { thinkingLevel: "MINIMAL" as any },
               systemInstruction: `Anda adalah Coach Murojaah Al-Quran AI, seorang guru tahfidz yang handal, fokus, menyemangati, dan sangat teliti.
 Tugas utama Anda adalah menguji, membimbing, dan mendampingi hafalan Al-Quran pengguna.
 

@@ -3,6 +3,7 @@ import { Sparkles, Loader2, Send, MessageCircle, RotateCcw, User, Trash2, BookOp
 import { motion, AnimatePresence } from "motion/react";
 import { sendMurojaahCoach } from "@/src/lib/api";
 import Markdown from "react-markdown";
+import AIErrorCard from "./AIErrorCard";
 
 export default function MurojaahCoachView() {
   const [chat, setChat] = useState<{ role: 'user' | 'ai', content: string }[]>([]);
@@ -15,6 +16,27 @@ export default function MurojaahCoachView() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [chat, isTyping]);
+
+  const handleRetryMurojaah = async () => {
+    const userMsgs = chat.filter(m => m.role === 'user');
+    if (userMsgs.length === 0 || isTyping) return;
+    const lastUserMessage = userMsgs[userMsgs.length - 1].content;
+    
+    if (chat.length > 0 && chat[chat.length - 1].role === 'ai') {
+      setChat(prev => prev.slice(0, prev.length - 1));
+    }
+    
+    setIsTyping(true);
+    try {
+      const historyTruncated = chat.slice(0, chat.length - 1);
+      const res = await sendMurojaahCoach(lastUserMessage, historyTruncated);
+      setChat(prev => [...prev, { role: 'ai' as const, content: res.result }]);
+    } catch (err: any) {
+      setChat(prev => [...prev, { role: 'ai' as const, content: `Terjadi masalah koneksi Coach AI: ${err.message || "Gagal menghubungi Server."}` }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   const handleSend = async (messageText?: string) => {
     const textToSend = messageText || input.trim();
@@ -139,14 +161,20 @@ export default function MurojaahCoachView() {
               }`}>
                 {item.role === 'user' ? <User size={14} /> : <Award size={14} />}
               </div>
-              <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
+              <div className={`max-w-[85%] p-4 rounded-xl text-sm leading-relaxed ${
                 item.role === 'user' 
                   ? 'bg-emerald-50 text-emerald-900 rounded-tr-none border border-emerald-100' 
-                  : 'bg-amber-50/40 border border-amber-100/50 text-gray-800 rounded-tl-none shadow-xs'
+                  : (item.content.includes("Kuota AI") || item.content.includes("Belum Aktif") || item.content.includes("koneksi") || item.content.includes("limit") || item.content.includes("429") || item.content.includes("kedaluwarsa"))
+                    ? 'p-0 bg-transparent border-0'
+                    : 'bg-amber-50/40 border border-amber-100/50 text-gray-800 rounded-tl-none shadow-xs'
               }`}>
-                <div className="prose prose-sm prose-emerald font-medium leading-relaxed">
-                  <Markdown>{item.content}</Markdown>
-                </div>
+                {item.role === 'ai' && (item.content.includes("Kuota AI") || item.content.includes("Belum Aktif") || item.content.includes("koneksi") || item.content.includes("limit") || item.content.includes("429") || item.content.includes("kedaluwarsa")) ? (
+                  <AIErrorCard errorText={item.content} variant="chat" onRetry={handleRetryMurojaah} />
+                ) : (
+                  <div className="prose prose-sm prose-emerald font-medium leading-relaxed">
+                    <Markdown>{item.content}</Markdown>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}

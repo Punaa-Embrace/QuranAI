@@ -4,6 +4,15 @@ import { motion, AnimatePresence } from "motion/react";
 import { getAIMotivation, sendAIChat } from "@/src/lib/api";
 import Markdown from "react-markdown";
 import MurojaahCoachView from "./MurojaahCoachView";
+import AIErrorCard from "./AIErrorCard";
+
+const LOCAL_MOTIVATIONS = [
+  "Tetap semangat menghafal! Al-Quran akan menjadi syafaat bagimu di hari kiamat kelak.",
+  "Satu ayat per hari dengan istikamah jauh lebih baik daripada banyak namun terputus.",
+  "Jangan lelah mengulang (murojaah). Hafalan yang hilang bisa didapatkan kembali dengan kesabaran.",
+  "Setiap huruf Al-Quran yang kita baca dan hafal bernilai pahala berlipat ganda di sisi Allah.",
+  "Ingatlah, mahkota kehormatan menanti kedua orang tuamu di surga sebab hafalan Quranmu."
+];
 
 export default function AICompanion({ initialMode = "coach" }: { initialMode?: "chat" | "coach" }) {
   const [mode, setMode] = useState<"chat" | "coach">(initialMode);
@@ -13,21 +22,29 @@ export default function AICompanion({ initialMode = "coach" }: { initialMode?: "
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [aiLoaded, setAiLoaded] = useState(false);
 
   const fetchMotivation = async () => {
     setLoading(true);
     try {
       const res = await getAIMotivation();
       setMotivation(res.result);
+      setAiLoaded(true);
     } catch (err) {
-      setMotivation("Tetap semangat menghafal! Al-Quran akan menjadi syafaat bagimu di hari kiamat kelak.");
+      const remaining = LOCAL_MOTIVATIONS.filter(m => m !== motivation);
+      const randomFallback = remaining[Math.floor(Math.random() * remaining.length)] || LOCAL_MOTIVATIONS[0];
+      setMotivation(randomFallback);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMotivation();
+    // Pick local motivation on mount
+    const seed = Math.floor(Math.random() * LOCAL_MOTIVATIONS.length);
+    setMotivation(LOCAL_MOTIVATIONS[seed]);
+    setLoading(false);
+    setAiLoaded(false);
   }, []);
 
   useEffect(() => {
@@ -39,6 +56,27 @@ export default function AICompanion({ initialMode = "coach" }: { initialMode?: "
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [chat, isTyping]);
+
+  const handleRetryLastMessage = async () => {
+    const userMsgs = chat.filter(m => m.role === 'user');
+    if (userMsgs.length === 0 || isTyping) return;
+    const lastUserMessage = userMsgs[userMsgs.length - 1].content;
+    
+    if (chat.length > 0 && chat[chat.length - 1].role === 'ai') {
+      setChat(prev => prev.slice(0, prev.length - 1));
+    }
+    
+    setIsTyping(true);
+    try {
+      const historyTruncated = chat.slice(0, chat.length - 1);
+      const res = await sendAIChat(lastUserMessage, historyTruncated);
+      setChat(prev => [...prev, { role: 'ai', content: res.result }]);
+    } catch (err: any) {
+      setChat(prev => [...prev, { role: 'ai', content: `Maaf, terjadi kesalahan: ${err.message || "Silakan coba beberapa saat lagi."}` }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,16 +144,22 @@ export default function AICompanion({ initialMode = "coach" }: { initialMode?: "
           >
             <div className="bg-white rounded-[calc(1.5rem-1px)] p-6 space-y-4">
               <div className="flex justify-between items-center border-b border-gray-50 pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-primary">
-                    <MessageCircle size={18} />
+                <div className="flex flex-col text-left">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-primary">
+                      <MessageCircle size={18} />
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-widest text-primary">Motivasi Hari Ini</span>
                   </div>
-                  <span className="text-xs font-black uppercase tracking-widest text-primary">Motivasi Hari Ini</span>
+                  <span className="text-[9px] text-gray-400 font-bold mt-1.5 uppercase tracking-wider">
+                    {aiLoaded ? "✨ Dihasilkan oleh AI" : "📚 Motivasi Offline (Murojaah Saku)"}
+                  </span>
                 </div>
                 <button 
                   onClick={fetchMotivation}
                   disabled={loading}
-                  className="p-2 hover:bg-emerald-50 rounded-full text-secondary transition-colors disabled:opacity-50"
+                  className="p-2 hover:bg-emerald-50 rounded-full text-secondary transition-colors disabled:opacity-50 self-start"
+                  title="Dapatkan Motivasi AI"
                 >
                   <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
                 </button>
@@ -181,14 +225,20 @@ export default function AICompanion({ initialMode = "coach" }: { initialMode?: "
                   }`}>
                     {m.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
                   </div>
-                  <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${
+                  <div className={`max-w-[80%] p-4 rounded-xl text-sm leading-relaxed ${
                     m.role === 'user' 
                       ? 'bg-emerald-50 text-emerald-900 rounded-tr-none' 
-                      : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none shadow-sm'
+                      : (m.content.includes("Kuota AI") || m.content.includes("Belum Aktif") || m.content.includes("kesalahan") || m.content.includes("limit") || m.content.includes("429") || m.content.includes("kedaluwarsa"))
+                        ? 'p-0 bg-transparent border-0'
+                        : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none shadow-sm'
                   }`}>
-                    <div className="markdown-body prose prose-emerald prose-sm">
-                      <Markdown>{m.content}</Markdown>
-                    </div>
+                    {m.role === 'ai' && (m.content.includes("Kuota AI") || m.content.includes("Belum Aktif") || m.content.includes("kesalahan") || m.content.includes("limit") || m.content.includes("429") || m.content.includes("kedaluwarsa")) ? (
+                      <AIErrorCard errorText={m.content} variant="chat" onRetry={handleRetryLastMessage} />
+                    ) : (
+                      <div className="markdown-body prose prose-emerald prose-sm">
+                        <Markdown>{m.content}</Markdown>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               ))}

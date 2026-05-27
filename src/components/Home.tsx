@@ -11,10 +11,22 @@ import {
   MessageSquare,
   Clock,
   Heart,
-  Award
+  Award,
+  Loader2,
+  Key,
+  RefreshCw
 } from "lucide-react";
 import { getDailyQuote, getAIMotivation } from "@/src/lib/api";
 import Markdown from "react-markdown";
+
+const LOCAL_QUOTES = [
+  "Sebaik-baik kalian adalah orang yang mempelajari Al-Qur'an dan mengajarkannya. (HR. Bukhari)",
+  "Al-Quran adalah obat penawar bagi kegelisahan hati manusia yang beriman.",
+  "Mempunyai satu kawan setia yang selalu mengajak mulia bersama Al-Quran adalah sebuah anugerah luar biasa.",
+  "Membaca satu huruf dari Al-Quran dinilai sebagai sepuluh kebaikan di sisi Allah. (HR. Tirmidzi)",
+  "Jadikanlah Al-Quran sebagai teman karibmu, ia akan memberi syafaat bagimu kelak di akhirat.",
+  "Hafalan Al-Quran adalah investasi mahkota cahaya paling agung bagi orang tuamu di surga."
+];
 
 export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode?: boolean, mode?: 'chat' | 'coach') => void }) {
   const [quote, setQuote] = useState("");
@@ -22,6 +34,8 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState("Assalamualaikum");
+  const [aiFetching, setAiFetching] = useState(false);
+  const [aiLoaded, setAiLoaded] = useState(false);
 
   const getFirstParagraphOnly = (text: string) => {
     if (!text) return "";
@@ -47,18 +61,11 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
       setGreeting("Selamat Malam, Pejuang Quran");
     }
 
-    async function loadData() {
-      try {
-        const [qRes, mRes] = await Promise.all([getDailyQuote(), getAIMotivation()]);
-        setQuote(qRes.result || "Tetaplah bersama Al-Quran, maka Al-Quran akan bersamamu.");
-        setMotivation(mRes.result || "Semangat menghafal hari ini!");
-      } catch (err) {
-        setQuote("Al-Quran adalah cahaya bagi hati yang beriman.");
-        setMotivation("Jadikan hari ini langkah baru menuju hafalan yang lebih baik.");
-      } finally {
-        setLoading(false);
-      }
-    }
+    // Load offline default quote on mount
+    const seed = Math.floor(Math.random() * LOCAL_QUOTES.length);
+    setQuote(LOCAL_QUOTES[seed]);
+    setMotivation("Semangat menghafal hari ini!");
+    setLoading(false);
 
     // Load progress
     const saved = localStorage.getItem("quran_progress");
@@ -69,9 +76,25 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
         setProgress(avg);
       }
     }
-
-    loadData();
   }, []);
+
+  const handleGetAiInspiration = async () => {
+    setAiFetching(true);
+    try {
+      const res = await getDailyQuote();
+      if (res && res.result) {
+        setQuote(res.result);
+        setAiLoaded(true);
+      }
+    } catch (err) {
+      // Gracefully fall back to another random quote with alert information
+      const remainingQuotes = LOCAL_QUOTES.filter(q => q !== quote);
+      const randomFallback = remainingQuotes[Math.floor(Math.random() * remainingQuotes.length)] || LOCAL_QUOTES[0];
+      setQuote(randomFallback);
+    } finally {
+      setAiFetching(false);
+    }
+  };
 
   return (
     <div className="p-6 space-y-8 animate-fade-in">
@@ -95,7 +118,7 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
           className="bg-primary p-5 rounded-3xl text-white relative overflow-hidden shadow-md border-b-4 border-emerald-800"
         >
           <div className="absolute -top-6 -right-6 opacity-10 bg-white w-24 h-24 rounded-full" />
-          <div className="relative z-10 space-y-3">
+          <div className="relative z-10 space-y-4">
             <div className="flex items-center gap-2 text-white/80">
               <Quote size={14} className="text-amber-300" />
               <span className="text-[9px] font-extrabold uppercase tracking-widest text-emerald-200">Mutiara Hikmah Hari Ini</span>
@@ -104,9 +127,33 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
               <div className="h-12 w-full bg-white/10 animate-pulse rounded-xl" />
             ) : (
               <p className="text-xs sm:text-sm font-semibold leading-relaxed italic text-white/95">
-                {getFirstParagraphOnly(quote)}
+                "{getFirstParagraphOnly(quote)}"
               </p>
             )}
+
+            {/* Manual user-initiated AI trigger */}
+            <div className="flex justify-between items-center flex-wrap gap-2 pt-2 border-t border-emerald-550/30">
+              <span className="text-[8.5px] text-emerald-200 font-extrabold uppercase tracking-widest">
+                {aiLoaded ? "✨ Dihasilkan oleh AI" : "📚 Kutipan Ramah Kuota"}
+              </span>
+              <button
+                onClick={handleGetAiInspiration}
+                disabled={aiFetching}
+                className="flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider bg-amber-400 hover:bg-amber-350 disabled:hover:bg-amber-400 text-emerald-950 px-3 py-1.5 rounded-xl transition-all active:scale-95 disabled:opacity-50 cursor-pointer shadow-xs border border-transparent hover:border-amber-300"
+              >
+                {aiFetching ? (
+                  <>
+                    <Loader2 size={10} className="animate-spin" />
+                    <span>Menghubungkan AI...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={10} />
+                    <span>Dapatkan Inspirasi AI ⚡</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -228,8 +275,6 @@ export default function Home({ onNavigate }: { onNavigate: (page: string, aiMode
 
         </div>
       </div>
-
-
 
       {/* Quick Tips Footer Card */}
       <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100 flex items-start gap-4">

@@ -3,6 +3,7 @@ import { ChevronLeft, Sparkles, X, Loader2, CheckCircle2, Info, Bookmark, Play, 
 import { getSurahDetail, getAIExplanation, cn, getSurahSummary } from "@/src/lib/api";
 import { motion, AnimatePresence } from "motion/react";
 import Markdown from "react-markdown";
+import AIErrorCard from "./AIErrorCard";
 
 export default function SurahDetailView({ nomor, onBack }: { nomor: number; onBack: () => void }) {
   const [data, setData] = useState<any>(null);
@@ -521,6 +522,11 @@ export default function SurahDetailView({ nomor, onBack }: { nomor: number; onBa
                     <Loader2 className="animate-spin text-primary" size={32} />
                     <p className="text-xs font-bold text-primary animate-pulse uppercase tracking-widest">AI sedang merangkum...</p>
                   </div>
+                ) : (summary.includes("Gagal") || summary.includes("Kuota") || summary.includes("Belum") || summary.includes("429") || summary.includes("limit")) ? (
+                  <AIErrorCard errorText={summary} onRetry={() => {
+                    setSummary("");
+                    handleFetchSummary();
+                  }} />
                 ) : (
                   <div className="markdown-body prose prose-sm prose-emerald">
                     <Markdown>{summary}</Markdown>
@@ -579,6 +585,11 @@ export default function SurahDetailView({ nomor, onBack }: { nomor: number; onBa
                     <Loader2 className="animate-spin" size={32} />
                     <p className="text-sm font-medium animate-pulse">Menghubungkan ke Gemini AI...</p>
                   </div>
+                ) : (explanation.includes("Gagal") || explanation.includes("Kuota") || explanation.includes("Belum") || explanation.includes("429") || explanation.includes("limit")) ? (
+                  <AIErrorCard errorText={explanation} onRetry={() => {
+                    setExplanation("");
+                    handleExplain(selectedAyat);
+                  }} />
                 ) : (
                   <div className="markdown-body prose prose-sm text-gray-800 leading-relaxed">
                     <Markdown>{explanation}</Markdown>

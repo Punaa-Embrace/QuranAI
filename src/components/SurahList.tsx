@@ -3,6 +3,7 @@ import { Search, Loader2, Sparkles, X, Bookmark } from "lucide-react";
 import { getSurahs, smartSearch } from "@/src/lib/api";
 import { motion, AnimatePresence } from "motion/react";
 import Markdown from "react-markdown";
+import AIErrorCard from "./AIErrorCard";
 
 export default function SurahList({ onSelect, initialAiMode = false }: { onSelect: (id: number) => void; initialAiMode?: boolean }) {
   const [surahs, setSurahs] = useState<any[]>([]);
@@ -35,8 +36,8 @@ export default function SurahList({ onSelect, initialAiMode = false }: { onSelec
     }
   }, []);
 
-  const handleAiSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAiSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!search.trim()) return;
     
     setAiLoading(true);
@@ -176,6 +177,8 @@ export default function SurahList({ onSelect, initialAiMode = false }: { onSelec
                 <Loader2 className="animate-spin" size={20} />
                 <p className="text-sm font-medium animate-pulse">Gemini sedang mencari ayat...</p>
               </div>
+            ) : (aiResult.includes("Gagal") || aiResult.includes("Kuota") || aiResult.includes("Belum") || aiResult.includes("429") || aiResult.includes("limit")) ? (
+              <AIErrorCard errorText={aiResult} onRetry={() => handleAiSearch()} />
             ) : (
               <div className="markdown-body prose prose-sm max-w-none">
                 <Markdown>{aiResult}</Markdown>
