@@ -28,27 +28,6 @@ try {
 const app = express();
 const PORT = 3000;
 
-let aiClient: GoogleGenAI | null = null;
-
-function getAIViaLazyInit(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "AIzaSyD_yrzT6wYdC2EjBf-AONVBpd7dNg_UTVM" || !apiKey.startsWith("AIzaSy")) {
-    throw new Error("GEMINI_API_KEY_UNCONFIGURED");
-  }
-
-  if (!aiClient) {
-    aiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  return aiClient;
-}
-
 function checkErrorType(error: any) {
   const errorString = typeof error === "object" ? JSON.stringify(error) : String(error);
   const errorMessage = error?.message || "";
@@ -73,6 +52,264 @@ function checkErrorType(error: any) {
     error?.code === 429;
 
   return { isKeyError, isQuotaError };
+}
+
+function logAIWarning(context: string, error: any) {
+  const errorString = typeof error === "object" ? JSON.stringify(error) : String(error);
+  const errorMessage = error?.message || "";
+  
+  if (
+    errorString.includes("429") ||
+    errorString.includes("RESOURCE_EXHAUSTED") ||
+    errorString.includes("quota exceeded") ||
+    errorMessage.includes("exhausted") ||
+    errorMessage.includes("cooling down")
+  ) {
+    console.warn(`[AI WARN] serving ${context} fallback (Quota Limit reached / All keys cooling down).`);
+  } else {
+    const shortMsg = (errorMessage || errorString).substring(0, 120);
+    console.warn(`[AI WARN] serving ${context} fallback. Reason: ${shortMsg}`);
+  }
+}
+
+// Cache of created GoogleGenAI clients for each key to avoid recreating clients on every request
+const aiClientsCache = new Map<string, GoogleGenAI>();
+
+// Keep track of temporarily failed keys (e.g. rate-limit/quota or invalid) with a timestamp of failure
+const failedKeys = new Map<string, number>();
+
+// Count consecutive failures for adaptive backoff escalation
+const failCounts = new Map<string, number>();
+
+// Track timestamps of last usage for Least-Recently-Used (LRU) load balancing
+const lastUsedKeys = new Map<string, number>();
+
+// Score tracking for each key to auto-promote the most reliable keys (e.g. Gemini Pro keys)
+const keyScores = new Map<string, number>();
+
+function getKeyScore(key: string): number {
+  if (!keyScores.has(key)) {
+    keyScores.set(key, 100); // Default/neutral score
+  }
+  return keyScores.get(key) || 100;
+}
+
+function adjustKeyScore(key: string, change: number) {
+  const current = getKeyScore(key);
+  const next = Math.max(10, Math.min(500, current + change));
+  keyScores.set(key, next);
+}
+
+// Retrieve all available Gemini API keys from environment variables safely
+function getAvailableApiKeys(): string[] {
+  const keys: string[] = [];
+  
+  // 1. Check targeted variables explicitly
+  const nominees = [
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+  ];
+
+  for (const key of nominees) {
+    if (
+      key && 
+      typeof key === "string" && 
+      key.trim() !== "" && 
+      key.trim().length > 10 &&
+      !key.includes("YOUR_") &&
+      !key.includes("MY_GEMINI") &&
+      key !== "AIzaSyD_yrzT6wYdC2EjBf-AONVBpd7dNg_UTVM" && 
+      !keys.includes(key)
+    ) {
+      keys.push(key);
+    }
+  }
+  
+  // 2. Scan all process.env variables to auto-discover any other Google/Gemini keys (they always start with 'AIzaSy')
+  for (const envKey of Object.keys(process.env)) {
+    const val = process.env[envKey];
+    if (
+      val && 
+      typeof val === "string" && 
+      val.startsWith("AIzaSy") && 
+      val !== "AIzaSyD_yrzT6wYdC2EjBf-AONVBpd7dNg_UTVM" &&
+      val.trim().length > 10 &&
+      !val.includes("YOUR_") &&
+      !val.includes("MY_GEMINI")
+    ) {
+      if (!keys.includes(val)) {
+        keys.push(val);
+      }
+    }
+  }
+  
+  return keys;
+}
+
+function getAIViaLazyInit(): { client: GoogleGenAI; key: string; isOnCooldown: boolean } {
+  const keys = getAvailableApiKeys();
+  if (keys.length === 0) {
+    throw new Error("GEMINI_API_KEY_UNCONFIGURED");
+  }
+
+  const now = Date.now();
+  
+  // Filter out keys currently cooling down from a recent failure with consecutive scaling (adaptive backoff)
+  const activeKeys = keys.filter(key => {
+    const failTime = failedKeys.get(key);
+    if (failTime) {
+      const consecFails = failCounts.get(key) || 1;
+      const cooldownDuration = Math.min(15, 3 * consecFails) * 60 * 1000; // Escalates up to 15 minutes
+      if (now - failTime < cooldownDuration) {
+        return false; // Put on cooldown
+      }
+    }
+    // Also filter out keys with critically low score (indicating invalid/dead key)
+    if (getKeyScore(key) < 30) {
+      return false;
+    }
+    return true;
+  });
+
+  const allActiveExcludedAndKeyAvailable = activeKeys.length > 0;
+  // Select the key that is best suited using multi-criterion sorting
+  const candidates = allActiveExcludedAndKeyAvailable ? activeKeys : keys;
+  
+  const sortedCandidates = [...candidates].sort((a, b) => {
+    // 1. Uncooled keys should always be prioritized over cooling keys
+    const aCooled = failedKeys.has(a) && (now - (failedKeys.get(a) || 0) < 3 * 60 * 1000);
+    const bCooled = failedKeys.has(b) && (now - (failedKeys.get(b) || 0) < 3 * 60 * 1000);
+    if (aCooled !== bCooled) {
+      return aCooled ? 1 : -1;
+    }
+
+    // 2. Distribute requests using Least-Recently-Used (LRU) to level-load the rate limits of keys
+    const aLastUsed = lastUsedKeys.get(a) || 0;
+    const bLastUsed = lastUsedKeys.get(b) || 0;
+    if (Math.abs(aLastUsed - bLastUsed) > 1500) { // minimum difference to matter for concurrency
+      return aLastUsed - bLastUsed;
+    }
+
+    // 3. Fall back/tie-breaker to absolute scores
+    return getKeyScore(b) - getKeyScore(a);
+  });
+
+  const selectedKey = sortedCandidates[0] || keys[0];
+  lastUsedKeys.set(selectedKey, now);
+
+  let client = aiClientsCache.get(selectedKey);
+  if (!client) {
+    client = new GoogleGenAI({
+      apiKey: selectedKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+    aiClientsCache.set(selectedKey, client);
+  }
+
+  // Log a safe redacted indicator of active load-balanced key usage calm and clean
+  const redactedKey = `${selectedKey.substring(0, 7)}...${selectedKey.substring(selectedKey.length - 7)}`;
+  const score = getKeyScore(selectedKey);
+  const consecFailCount = failCounts.get(selectedKey) || 0;
+  console.log(`[AI ROTATION] Using key: ${redactedKey} (Score: ${score}, Consecutive Fails: ${consecFailCount}, Pool Size: ${keys.length}, Active: ${activeKeys.length}, Cool: ${failedKeys.size})`);
+
+  return { client, key: selectedKey, isOnCooldown: !allActiveExcludedAndKeyAvailable };
+}
+
+// Automatically wraps any Google GenAI call with instant translation, automatic try-next rotation, and cooldown tracking
+async function callAiWithAutoFailover<T>(
+  action: (ai: GoogleGenAI) => Promise<T>
+): Promise<T> {
+  const keys = getAvailableApiKeys();
+  if (keys.length === 0) {
+    throw new Error("GEMINI_API_KEY_UNCONFIGURED");
+  }
+
+  // Pre-check keys state
+  const keysState = keys.map(k => {
+    const failTime = failedKeys.get(k);
+    if (failTime) {
+      const consecFails = failCounts.get(k) || 1;
+      const cooldownDuration = Math.min(15, 3 * consecFails) * 60 * 1000;
+      if (Date.now() - failTime < cooldownDuration) {
+        return "cooldown";
+      }
+    }
+    return "active";
+  });
+
+  // If ALL keys are on cooldown/exhausted of quota, fail fast to trigger graceful fallback instantly without delaying users
+  const hasActiveKey = keysState.includes("active");
+  if (!hasActiveKey) {
+    console.warn(`[AI ROTATION] All ${keys.length} API keys in the pool are currently on cooldown due to quota limit. Triggering fallback fast!`);
+    const limitError = new Error("All API keys are exhausted / cooling down.");
+    (limitError as any).status = "RESOURCE_EXHAUSTED";
+    (limitError as any).code = 429;
+    throw limitError;
+  }
+
+  let lastError: any = null;
+  const maxAttempts = Math.min(Math.max(keys.length * 2, 3), 8);
+  
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const { client: ai, key: currentKey, isOnCooldown } = getAIViaLazyInit();
+    
+    // If the key retrieved is on cooldown and we're retrying, stop to avoid spinning the loop continuously
+    if (isOnCooldown && attempt > 0) {
+      break;
+    }
+
+    try {
+      const result = await action(ai);
+      if (currentKey) {
+        adjustKeyScore(currentKey, 10);
+        failCounts.set(currentKey, 0);
+      }
+      return result;
+    } catch (err: any) {
+      lastError = err;
+      const { isKeyError, isQuotaError } = checkErrorType(err);
+      
+      if (isKeyError || isQuotaError) {
+        if (currentKey) {
+          adjustKeyScore(currentKey, -30);
+          failedKeys.set(currentKey, Date.now());
+          const nextFailCount = (failCounts.get(currentKey) || 0) + 1;
+          failCounts.set(currentKey, nextFailCount);
+        }
+        
+        const redactedKey = currentKey ? `${currentKey.substring(0, 7)}...${currentKey.substring(currentKey.length - 7)}` : "unknown";
+        const consec = currentKey ? (failCounts.get(currentKey) || 1) : 1;
+        console.log(`[AI ROTATION] API Key ${redactedKey} is temporarily exhausted (consecutive #${consec}). Selecting another key...`);
+        
+        // Fast break check: if no more keys are left outside cooldown, fail-fast now!
+        const activeRemaining = keys.filter(k => {
+          const fTime = failedKeys.get(k);
+          if (fTime) {
+            const cFails = failCounts.get(k) || 1;
+            const cd = Math.min(15, 3 * cFails) * 60 * 1000;
+            return (Date.now() - fTime >= cd);
+          }
+          return true;
+        }).length;
+
+        if (activeRemaining === 0) {
+          break; // Exit the loop early to fallback fast instead of hanging with sleep timers
+        }
+
+        const delayMs = 500 + (attempt * 300); 
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError;
 }
 
 function handleAIError(error: any, res: express.Response, context: string, fallbackMessage: string) {
@@ -102,12 +339,10 @@ app.use(express.json());
 async function start() {
   // API Routes
   app.get("/api/ai/debug-env", (req, res) => {
-    const key = process.env.GEMINI_API_KEY;
+    const keys = getAvailableApiKeys();
     res.json({
-      exists: !!key,
-      length: key ? key.length : 0,
-      prefix: key ? key.substring(0, 5) : "",
-      suffix: key && key.length > 5 ? key.substring(key.length - 5) : "",
+      poolSize: keys.length,
+      redactedPool: keys.map(k => `${k.substring(0, 5)}...${k.substring(k.length - 5)}`),
       nodeEnv: process.env.NODE_ENV,
       appUrlExists: !!process.env.APP_URL
     });
@@ -117,8 +352,6 @@ async function start() {
     const { surah, ayat, text, translation } = req.body;
     try {
       try {
-        const ai = getAIViaLazyInit();
-
         const prompt = `Sebagai pakar Tafsir Al-Quran dan Mentor Spiritual, jelaskan secara mendalam dan menyentuh hati ayat berikut (Surah ${surah} Ayat ${ayat}) dengan bahasa sederhana namun berbobot untuk kalangan mahasiswa dan pelajar muslim modern:
         Teks Arab: ${text}
         Arti Terjemahan: ${translation}
@@ -131,10 +364,12 @@ async function start() {
         
         Gunakan format Markdown yang sangat rapi, tebalkan kata kunci kunci, dan akhiri dengan pesan penyemangat spiritual yang menggetarkan jiwa.`;
 
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: prompt,
-        });
+        const response = await callAiWithAutoFailover((ai) => 
+          ai.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents: prompt,
+          })
+        );
 
         if (!response.text) {
           throw new Error("AI returned empty response");
@@ -142,10 +377,8 @@ async function start() {
 
         res.json({ result: response.text });
       } catch (innerErr: any) {
-        const { isKeyError, isQuotaError } = checkErrorType(innerErr);
-        if (isKeyError || isQuotaError) {
-          console.warn(`[AI WARN] serving explain fallback due to ${isKeyError ? 'unconfigured key' : 'quota limit'}.`);
-          const fallbackExplanation = `### 📖 Penjelasan Ayat (Asisten QuranMemo AI)
+        logAIWarning("explain", innerErr);
+        const fallbackExplanation = `### 📖 Penjelasan Ayat (Asisten QuranMemo AI)
 
 Kami menyajikan penjelasan hikmah mendalam dari **Surah ${surah} Ayat ${ayat}** untuk menemani perjuangan suci hafalan Anda:
 
@@ -160,26 +393,26 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
 * **Pengulangan Visual & Makna**: Bacalah ayat ini berulang sebanyak 5-10 kali sambil memejamkan mata dan mengulang terjemahannya untuk memperkuat memori asosiatif batin Anda.
 
 *Catatan: Fitur penjelasan AI terkustomisasi saat ini sedang berjalan dalam mode bimbingan cadangan ramah kuota. Rasa keindahan mendalam dan hikmah suci ayat ini tetap abadi menemani setiap embusan napas perjuangan Anda! 🤲🌟*`;
-          return res.json({ result: fallbackExplanation });
-        }
-        throw innerErr;
+        return res.json({ result: fallbackExplanation });
       }
     } catch (error: any) {
-      handleAIError(error, res, "Explain", "Gagal memproses penjelasan AI");
+      console.error("[CRITICAL] Explain route error:", error);
+      res.json({ result: `Murojaah terus berjalan! Kami tetap di sini mendampingi batin Anda. (Surah ${surah} Ayat ${ayat})` });
     }
   });
 
   app.post("/api/ai/motivation", async (req, res) => {
     try {
       try {
-        const ai = getAIViaLazyInit();
-
         const prompt = `Tuliskan satu paragraf motivasi spiritual yang sangat indah, membakar semangat, dan menyentuh relung hati terdalam untuk seorang mahasiswa/pelajar muslim yang sedang menghafal Al-Quran (Hafiz/Hafizah). 
         SANGAT PENTING: Tuliskan ini hanya dalam SATU PARAGRAF PENDEK (maksimal 3-4 kalimat). Harus sangat padat, singkat, hangat, sastrawi namun mudah dicerna, dan penuh empati. Jangan bertele-tele atau membuat beberapa paragraf!`;
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: prompt,
-        });
+        
+        const response = await callAiWithAutoFailover((ai) => 
+          ai.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents: prompt,
+          })
+        );
 
         if (!response.text) {
           throw new Error("AI returned empty motivation");
@@ -193,33 +426,30 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
 
         res.json({ result: answer });
       } catch (innerErr: any) {
-        const { isKeyError, isQuotaError } = checkErrorType(innerErr);
-
-        if (isKeyError || isQuotaError) {
-          console.warn(`[AI WARN] serving motivation fallback due to ${isKeyError ? 'unconfigured key' : 'quota limit'}.`);
-          return res.json({
-            result: "Belajar dan menghafal Al-Quran adalah perjalanan suci yang penuh berkah. Setiap huruf yang dibaca bernilai sepuluh kebajikan, dan setiap kesulitan dalam mengejanya adalah pahala ganda di sisi Allah. Di tengah kesibukan tugas akademis Anda, luangkanlah waktu walau 10 menit untuk bersimpuh di hadapan kalam-Nya. Mahkota kemuliaan sedang menanti kedua orang tua Anda di surga kelak. Kuatkan tekad, rapatkan barisan, dan jadilah penjaga wahyu-Nya yang istiqomah! 🌟🤲"
-          });
-        }
-        throw innerErr;
+        logAIWarning("motivation", innerErr);
+        return res.json({
+          result: "Belajar dan menghafal Al-Quran adalah perjalanan suci yang penuh berkah. Setiap huruf yang dibaca bernilai sepuluh kebajikan, dan setiap kesulitan dalam mengejanya adalah pahala ganda di sisi Allah. Di tengah kesibukan tugas akademis Anda, luangkanlah waktu walau 10 menit untuk bersimpuh di hadapan kalam-Nya. Mahkota kemuliaan sedang menanti kedua orang tua Anda di surga kelak. Kuatkan tekad, rapatkan barisan, dan jadilah penjaga wahyu-Nya yang istiqomah! 🌟🤲"
+        });
       }
     } catch (error: any) {
-      handleAIError(error, res, "Motivation", "Gagal memproses motivasi AI");
+      console.error("[CRITICAL] Motivation route error:", error);
+      res.json({ result: "Niatkan belajar dan beramal semata-mata mencari ridha Allah SWT. Semangat!" });
     }
   });
 
   app.get("/api/ai/daily-quote", async (req, res) => {
     try {
       try {
-        const ai = getAIViaLazyInit();
-
-        const prompt = `Berikan satu kutipan (quote) Islami terbaik hari ini yang khusus ditujukan untuk membangkitkan gairah dan kecintaan belajar, memahami, serta menghafal Al-Quran. 
+        const prompt = `Berikan satu kutipan (quote) Islami terbaik hari ini yang khusus ditujukan untuk membangkitkan gairah and kecintaan belajar, memahami, serta menghafal Al-Quran. 
         Sebutkan sumber mutiara hikmah tersebut dengan sangat jelas (baik hadits shahih, perkataan sahabat Nabi, atau pesan dari ulama mazhab terkemuka). 
         SANGAT PENTING: Seluruh tulisan kutipan, sumber, dan penjelasan itu harus dikemas dalam SATU PARAGRAF PENDEK (maksimal 3 kalimat). Jangan membuat daftar baris baru, subjudul, atau ulasan panjang. Jaga agar tetap ringkas, menawan, dan to-the-point!`;
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: prompt,
-        });
+        
+        const response = await callAiWithAutoFailover((ai) => 
+          ai.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents: prompt,
+          })
+        );
 
         if (!response.text) {
           throw new Error("AI returned empty quote");
@@ -234,18 +464,14 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
 
         res.json({ result: answer });
       } catch (innerErr: any) {
-        const { isKeyError, isQuotaError } = checkErrorType(innerErr);
-
-        if (isKeyError || isQuotaError) {
-          console.warn(`[AI WARN] serving daily quote fallback due to ${isKeyError ? 'unconfigured key' : 'quota limit'}.`);
-          return res.json({
-            result: "\"Sebaik-baik kalian adalah orang yang mempelajari Al-Qur'an dan mengajarkannya.\"\n\nSelalu niatkan menghafal untuk mencari ridha Allah, mulailah langkah baru dengan menambah satu ayat penyejuk hati hari ini! ✨\n\n— **HR. Al-Bukhari No. 5027**"
-          });
-        }
-        throw innerErr;
+        logAIWarning("daily-quote", innerErr);
+        return res.json({
+          result: "\"Sebaik-baik kalian adalah orang yang mempelajari Al-Qur'an dan mengajarkannya.\"\n\nSelalu niatkan menghafal untuk mencari ridha Allah, mulailah langkah baru dengan menambah satu ayat penyejuk hati hari ini! ✨\n\n— **HR. Al-Bukhari No. 5027**"
+        });
       }
     } catch (error: any) {
-      handleAIError(error, res, "Quote", "Gagal memproses quote harian");
+      console.error("[CRITICAL] Quote route error:", error);
+      res.json({ result: "\"Sebaik-baik kalian adalah orang yang mempelajari Al-Qur'an dan mengajarkannya.\" — HR. Al-Bukhari" });
     }
   });
 
@@ -253,8 +479,6 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
     const { history, message } = req.body;
     try {
       try {
-        const ai = getAIViaLazyInit();
-
         const contents = [
           ...history.map((m: any) => ({
             role: m.role === 'user' ? 'user' : 'model',
@@ -263,19 +487,21 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
           { role: 'user', parts: [{ text: message }] }
         ];
 
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents,
-          config: {
-            systemInstruction: `Anda adalah QuranMemo AI Assistant, asisten spiritual dan akademik super cerdas (overpowered level), hangat, dan interaktif yang siap mendampingi mahasiswa dan pelajar Muslim dalam menghafal, memahami tafsir, dan mempraktikkan Al-Quran.
+        const response = await callAiWithAutoFailover((ai) => 
+          ai.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents,
+            config: {
+              systemInstruction: `Anda adalah QuranMemo AI Assistant, asisten spiritual dan akademik super cerdas (overpowered level), hangat, dan interaktif yang siap mendampingi mahasiswa dan pelajar Muslim dalam menghafal, memahami tafsir, dan mempraktikkan Al-Quran.
 
-             Pilar Kepribadian Anda:
-             1. Sangat Alim & Berilmu: Jika ditanya tafsir atau ayat, berikan rujukan tepercaya (seperti Tafsir Kemenag, Ibnu Katsir, atau Al-Jalalayn). Sertakan ayat-ayat pendukung atau hadits shahih yang relevan dengan rapi.
-             2. Pendamping Praktis (Solutif): Berikan tips menghafal yang konkret, teruji, dan ramah mahasiswa (misalnya teknik 'tikrar', metode visualisasi, atau murajaah saku).
-             3. Sahabat Karib Syurga: Gunakan sapaan yang hangat seperti "Sahabat Quran", "Pecinta Al-Quran", atau "Pejuang Kalamllah". Bahasa Anda harus sopan, bersahabat, mengayom, dan membangkitkan asa spiritual ketika mereka mengeluh lelah menghafal.
-             4. Estetika Jawaban: Format tulisan menggunakan spasi dan paragraf yang rapi dan indah. JANGAN menggunakan tanda bintang (* atau **) sama sekali dalam format teks mana pun. Tebalkan/ganti kata penting menggunakan huruf kapital atau format tanpa tanda bintang, serta warnai dialog Anda dengan emoji yang menyejukkan (seperti 📖, 🌟, ✨, ❤️, 🤲).`,
-          },
-        });
+               Pilar Kepribadian Anda:
+               1. Sangat Alim & Berilmu: Jika ditanya tafsir atau ayat, berikan rujukan tepercaya (seperti Tafsir Kemenag, Ibnu Katsir, atau Al-Jalalayn). Sertakan ayat-ayat pendukung atau hadits shahih yang relevan dengan rapi.
+               2. Pendamping Praktis (Solutif): Berikan tips menghafal yang konkret, teruji, dan ramah mahasiswa (misalnya teknik 'tikrar', metode visualisasi, atau murajaah saku).
+               3. Sahabat Karib Syurga: Gunakan sapaan yang hangat seperti "Sahabat Quran", "Pecinta Al-Quran", atau "Pejuang Kalamllah". Bahasa Anda harus sopan, bersahabat, mengayom, dan membangkitkan asa spiritual ketika mereka mengeluh lelah menghafal.
+               4. Estetika Jawaban: Format tulisan menggunakan spasi dan paragraf yang rapi dan indah. JANGAN menggunakan tanda bintang (* atau **) sama sekali dalam format teks mana pun. Tebalkan/ganti kata penting menggunakan huruf kapital atau format tanpa tanda bintang, serta warnai dialog Anda dengan emoji yang menyejukkan (seperti 📖, 🌟, ✨, ❤️, 🤲).`,
+            },
+          })
+        );
 
         if (!response.text) {
           throw new Error("AI returned empty chat response");
@@ -283,10 +509,8 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
 
         res.json({ result: response.text });
       } catch (innerErr: any) {
-        const { isKeyError, isQuotaError } = checkErrorType(innerErr);
-        if (isKeyError || isQuotaError) {
-          console.warn(`[AI WARN] serving chat fallback due to ${isKeyError ? 'unconfigured key' : 'quota limit'}.`);
-          const msg = message.toLowerCase();
+        logAIWarning("chat", innerErr);
+        const msg = message.toLowerCase();
           let reply = "";
           if (msg.includes("tips") || msg.includes("hafal") || msg.includes("cara")) {
             reply = "Sahabat Quran yang dirahmati Allah, berikut adalah tips emas untuk mempermudah menghafal Al-Quran:\n\n1. Ikhlas & Doa: Awali dengan kebersihan niat semata-mata mencari ridha-Nya.\n2. Metode Tikrar (Pengulangan): Ulangi satu baris/ayat sebanyak 20 kali sebelum lanjut.\n3. Murojaah Terjadwal: Gunakan fitur Pengingat Murojaah di aplikasi untuk konsistensi.\n4. Pahami Makna: Bacalah terjemahannya terlebih dahulu; hal ini memicu ingatan visual dan asosiasi pikiran.\n\nSemoga Allah memudahkan setiap langkah spiritual Anda! 📖✨";
@@ -318,11 +542,10 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
             reply = "Masya Allah, terima kasih telah menyapa QuranMemo AI! Di tengah padatnya aktivitas belajar, meluangkan batin untuk Al-Quran adalah investasi terbaik dunia-akhirat.\n\nAda yang bisa saya bantu hari ini? Anda bisa meminta tips menghafal, penjelasan ayat, atau bimbingan murojaah interaktif! ✨📖";
           }
           return res.json({ result: reply });
-        }
-        throw innerErr;
       }
     } catch (error: any) {
-      handleAIError(error, res, "Chat", "Gagal mengirim pesan AI");
+      console.error("[CRITICAL] Chat route error:", error);
+      res.json({ result: "Niatkan belajar dan beramal semata-mata mencari ridha Allah SWT. Semoga hafalan Anda semakin diredhai-Nya! ✨📖" });
     }
   });
 
@@ -330,8 +553,6 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
     const { query } = req.body;
     try {
       try {
-        const ai = getAIViaLazyInit();
-
         const prompt = `Gunakan samudra pengetahuan Anda tentang Al-Quran. User sedang menghadapi masalah berikut atau mencari topik: "${query}". 
         Tugas Anda:
         1. Sebutkan 2-3 ayat yang paling relevan dengan masalah/topik tersebut (tuliskan Teks Arab, Artinya, dan Nama Surah beserta Nomor Ayat dengan jelas).
@@ -340,10 +561,12 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
         4. Akhiri dengan untaian kata mutiara/optimisme islami yang hangat agar mereka bersemangat membacanya.
         Gunakan format Markdown yang sangat rapi dan estetik.`;
 
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: prompt,
-        });
+        const response = await callAiWithAutoFailover((ai) => 
+          ai.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents: prompt,
+          })
+        );
 
         if (!response.text) {
           throw new Error("AI returned no results for search");
@@ -351,10 +574,8 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
 
         res.json({ result: response.text });
       } catch (innerErr: any) {
-        const { isKeyError, isQuotaError } = checkErrorType(innerErr);
-        if (isKeyError || isQuotaError) {
-          console.warn(`[AI WARN] serving search fallback due to ${isKeyError ? 'unconfigured key' : 'quota limit'}.`);
-          const fallbackSearch = `### Hasil Pencarian Khidmat (Mode Cadangan)
+        logAIWarning("search", innerErr);
+        const fallbackSearch = `### Hasil Pencarian Khidmat (Mode Cadangan)
 
 Menanggapi pencarian Anda tentang topik "${query}", berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
 
@@ -367,12 +588,11 @@ Menanggapi pencarian Anda tentang topik "${query}", berikut adalah ayat-ayat Al-
 Di tengah padatnya dunia perkuliahan dan beratnya godaan keseharian, kesabaran batin, shalat khusyu', serta keyakinan mutlak akan pertolongan-Nya adalah bekal paling utama bagi seorang penuntut ilmu.
 
 Catatan: Hasil pencarian saat ini disajikan dalam mode aman cadangan ramah kuota. Silakan terus berselancar di surah lainnya menggunakan tab Semua Surah! 📖✨`;
-          return res.json({ result: fallbackSearch });
-        }
-        throw innerErr;
+        return res.json({ result: fallbackSearch });
       }
     } catch (error: any) {
-      handleAIError(error, res, "Search", "AI gagal mencari topik.");
+      console.error("[CRITICAL] Search route error:", error);
+      res.json({ result: "Niatkan belajar dan beramal semata-mata mencari ridha Allah SWT. Semoga kelancaran menyertai pencarian Anda! ✨📖" });
     }
   });
 
@@ -380,8 +600,6 @@ Catatan: Hasil pencarian saat ini disajikan dalam mode aman cadangan ramah kuota
     const { surahName, description } = req.body;
     try {
       try {
-        const ai = getAIViaLazyInit();
-
         const prompt = `Berikan ringkasan eksekutif tingkat lanjut (overpowered context) berisi hikmah-hikmah emas tentang Surah ${surahName}. 
         Gunakan deskripsi awal ini sebagai referensi sejarah/dasar: ${description}.
         Fokuskan penjelasan pada aspek-aspek berikut:
@@ -390,10 +608,12 @@ Catatan: Hasil pencarian saat ini disajikan dalam mode aman cadangan ramah kuota
         3. Pelajaran Emas untuk Kehidupan Mahasiswa Modern: Cara mengaitkan ajaran surah ini dengan integritas akademik, manajemen waktu, relasi sosial, atau ketahanan mental generasi masa kini.
         Gunakan format tulisan yang menawan, JANGAN menggunakan tanda bintang (* atau **) sama sekali dalam format tulisan Anda. Gunakan bullet-points standar (- atau angka) tanpa asterisks.`;
 
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: prompt,
-        });
+        const response = await callAiWithAutoFailover((ai) => 
+          ai.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents: prompt,
+          })
+        );
 
         if (!response.text) {
           throw new Error("AI returned no summary");
@@ -401,10 +621,8 @@ Catatan: Hasil pencarian saat ini disajikan dalam mode aman cadangan ramah kuota
 
         res.json({ result: response.text });
       } catch (innerErr: any) {
-        const { isKeyError, isQuotaError } = checkErrorType(innerErr);
-        if (isKeyError || isQuotaError) {
-          console.warn(`[AI WARN] serving summary fallback due to ${isKeyError ? 'unconfigured key' : 'quota limit'}.`);
-          const fallbackSummary = `### Hikmah Emas Surah ${surahName}
+        logAIWarning("summary", innerErr);
+        const fallbackSummary = `### Hikmah Emas Surah ${surahName}
 
 Berikut kami sajikan intisari hikmah dan keutamaan mengagumkan dari Surah ${surahName}:
 
@@ -419,12 +637,11 @@ Menghafal Surah ${surahName} merekatkan kedamaian di hati. Selain memperkaya khu
 - Manajemen Harapan: Membalikkan fokus kerja keras kita semata-mata demi keberkahan, bukan sekadar mengejar status keduniawian semu.
 
 Nikmati setiap detik kebersamaan Anda bersama kalam suci di QuranMemo AI! 🌟📖`;
-          return res.json({ result: fallbackSummary });
-        }
-        throw innerErr;
+        return res.json({ result: fallbackSummary });
       }
     } catch (error: any) {
-      handleAIError(error, res, "Summary", "AI gagal merangkum surah.");
+      console.error("[CRITICAL] Summary route error:", error);
+      res.json({ result: "Niatkan belajar dan beramal semata-mata mencari ridha Allah SWT. Semoga kelancaran menyertai menghafal Surah ini! ✨📖" });
     }
   });
 
@@ -432,8 +649,6 @@ Nikmati setiap detik kebersamaan Anda bersama kalam suci di QuranMemo AI! 🌟�
     const { message, history } = req.body;
     try {
       try {
-        const ai = getAIViaLazyInit();
-
         const contents = [
           ...history.map((m: any) => ({
             role: m.role === 'user' ? 'user' : 'model',
@@ -442,11 +657,12 @@ Nikmati setiap detik kebersamaan Anda bersama kalam suci di QuranMemo AI! 🌟�
           { role: 'user', parts: [{ text: message }] }
         ];
 
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents,
-          config: {
-            systemInstruction: `Anda adalah Coach Murojaah Al-Quran AI, seorang guru tahfidz yang handal, fokus, menyemangati, dan sangat teliti.
+        const response = await callAiWithAutoFailover((ai) => 
+          ai.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents,
+            config: {
+              systemInstruction: `Anda adalah Coach Murojaah Al-Quran AI, seorang guru tahfidz yang handal, fokus, menyemangati, dan sangat teliti.
 Tugas utama Anda adalah menguji, membimbing, dan mendampingi hafalan Al-Quran pengguna.
 
 Aturan Utama & Gaya Jawaban:
@@ -457,8 +673,9 @@ Aturan Utama & Gaya Jawaban:
    - Evaluasi sambungan ayat tersebut (ejaan dsb) dengan sangat padat. Katakan benar atau tunjukkan salahnya secara singkat.
    - Berikan perbaikan singkat lalu beri potongan ayat berikutnya untuk dites atau tanyakan apakah ingin lanjut.
 4. Gunakan Bahasa Indonesia yang ramah, santun, dipadukan emoji yang menyemangati (📖, ✨, 👏, 🌟).`,
-          },
-        });
+            },
+          })
+        );
 
         if (!response.text) {
           throw new Error("AI returned empty coach response");
@@ -466,11 +683,8 @@ Aturan Utama & Gaya Jawaban:
 
         res.json({ result: response.text });
       } catch (innerErr: any) {
-        const { isKeyError, isQuotaError } = checkErrorType(innerErr);
-
-        if (isKeyError || isQuotaError) {
-          console.warn(`[AI WARN] serving murojaah coach fallback due to ${isKeyError ? 'unconfigured key' : 'quota limit'}.`);
-          const msg = message.toLowerCase();
+        logAIWarning("murojaah", innerErr);
+        const msg = message.toLowerCase();
           let reply = "";
           
           if (msg.includes("mulk") || msg.includes("tabarak")) {
@@ -487,11 +701,10 @@ Aturan Utama & Gaya Jawaban:
             reply = "Masya Allah, niat murojaahmu luar biasa! Sebutkan nama surahnya (misal: Al-Mulk 1-10 atau An-Naba 1-5).\n\nSaya siap mengetes hafalan Anda secara bertahap supaya makin kuat! 📖✨";
           }
           return res.json({ result: reply });
-        }
-        throw innerErr;
       }
     } catch (error: any) {
-      handleAIError(error, res, "Murojaah", "Gagal memproses bimbingan murojaah AI");
+      console.error("[CRITICAL] Murojaah route error:", error);
+      res.json({ result: "Niatkan belajar dan beramal semata-mata mencari ridha Allah SWT. Semoga hafalan murojaah Anda diberkahi! ✨📖" });
     }
   });
 

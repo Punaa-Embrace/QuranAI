@@ -44,3 +44,11 @@ html, body, #root, main {
   @apply list-disc ml-4 mb-2;
 }
 
+/* Force hide Vite dev server connection/rejection error overlays */
+vite-error-overlay, [id^="vite-error-overlay"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+

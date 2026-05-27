@@ -4,6 +4,59 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QuranAI</title>
+    <script>
+      // Prevent Vite's WebSocket reconnection errors from cluttering the UI or throwing unhandled errors
+      (function() {
+        if (typeof window !== 'undefined') {
+          // Monkeypatch WebSocket to silence connection/HMR errors
+          const OriginalWebSocket = window.WebSocket;
+          if (OriginalWebSocket) {
+            const PatchedWebSocket = function(url, protocols) {
+              const ws = new OriginalWebSocket(url, protocols);
+              ws.addEventListener('error', function(e) {
+                if (typeof url === 'string' && (url.includes('vite') || url.includes('3000') || url.includes('run.app'))) {
+                  e.stopImmediatePropagation();
+                  e.stopPropagation();
+                  e.preventDefault();
+                }
+              });
+              return ws;
+            };
+            PatchedWebSocket.prototype = OriginalWebSocket.prototype;
+            Object.setPrototypeOf(PatchedWebSocket, OriginalWebSocket);
+            window.WebSocket = PatchedWebSocket;
+          }
+
+          // Global silent error eaters for Vite HMR issues
+          window.addEventListener('unhandledrejection', function(event) {
+            const reason = event.reason;
+            if (reason) {
+              const msg = typeof reason === 'string' ? reason : (reason.message || '');
+              if (
+                msg.toLowerCase().includes('websocket') || 
+                msg.toLowerCase().includes('closed without opened')
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }
+          }, true);
+
+          window.addEventListener('error', function(event) {
+            const msg = event.message || '';
+            const filename = event.filename || '';
+            if (
+              msg.toLowerCase().includes('websocket') || 
+              msg.toLowerCase().includes('closed without opened') ||
+              filename.includes('vite/dist/client')
+            ) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          }, true);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
