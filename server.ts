@@ -519,9 +519,6 @@ async function start() {
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
-            config: {
-              thinkingConfig: { thinkingLevel: "LOW" as any },
-            },
           })
         );
 
@@ -565,9 +562,6 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
-            config: {
-              thinkingConfig: { thinkingLevel: "MINIMAL" as any },
-            },
           })
         );
 
@@ -605,9 +599,6 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
-            config: {
-              thinkingConfig: { thinkingLevel: "MINIMAL" as any },
-            },
           })
         );
 
@@ -652,7 +643,6 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
             model: "gemini-3.5-flash",
             contents,
             config: {
-              thinkingConfig: { thinkingLevel: "MINIMAL" as any },
               systemInstruction: `Anda adalah QuranMemo AI Assistant, asisten spiritual dan akademik super cerdas (overpowered level), hangat, dan interaktif yang siap mendampingi mahasiswa dan pelajar Muslim dalam menghafal, memahami tafsir, dan mempraktikkan Al-Quran.
 
                Pilar Kepribadian Anda:
@@ -710,6 +700,217 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
     }
   });
 
+function getSmartFallbackSearch(query: string): string {
+  const q = query.toLowerCase();
+  
+  // Topic 1: Sabar & Kesabaran
+  if (q.includes("sabar") || q.includes("patien") || q.includes("cobaan") || q.includes("ujian") || q.includes("tahan")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Kesabaran & Ketabahan**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Al-Baqarah (2) Ayat 153:**
+   "Wahai orang-orang yang beriman! Mohonlah pertolongan (kepada Allah) dengan sabar dan shalat. Sungguh, Allah beserta orang-orang yang sabar."
+2. **Surah Az-Zumar (39) Ayat 10:**
+   "Hanya orang-orang yang bersabarlah yang disempurnakan pahalanya tanpa batas."
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Sabar Aktif**: Kesabaran dalam Al-Quran bukanlah sikap pasrah pasif, melainkan ketahanan emosional dan keteguhan batin dalam membina ikhtiar.
+* **Menghadapi Padatnya Kuliah**: Ketika tugas menumpuk dan hafalan sering terlupa, sadarilah bahwa setiap detik keletihan batin Anda sedang dikonversi oleh Allah menjadi ampunan dosa dan pahala tanpa batas.
+* **Tegakkan Tiang Penyelamat**: Sinergikan sabar dengan memperbanyak shalat sunnah/wajib di awal waktu agar hati senantiasa kokoh.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Semangat sabar dan istiqomah Anda adalah jembatan menuju keberhasilan dunia-akhirat! 📖✨*`;
+  }
+  
+  // Topic 2: Ilmu, Belajar, Mahasiswa, Kuliah
+  if (q.includes("ilmu") || q.includes("belajar") || q.includes("kuliah") || q.includes("mahasiswa") || q.includes("sekolah") || q.includes("pintar") || q.includes("cerdas")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Ilmu & Belajar**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Al-Mujadilah (58) Ayat 11:**
+   "Niscaya Allah akan mengangkat (derajat) orang-orang yang beriman di antaramu dan orang-orang yang diberi ilmu beberapa derajat. Dan Allah Mahateliti terhadap apa yang kamu kerjakan."
+2. **Surah Thaha (20) Ayat 114:**
+   "...Dan katakanlah, 'Ya Tuhanku, tambahkanlah ilmu kepadaku.'"
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Kemuliaan Penuntut Ilmu**: Derajat orang berilmu dinaikkan beberapa tingkat oleh Allah SWT. Belajar kuliah bukan sekadar mencari IPK atau gelar, melainkan sebuah ibadah suci.
+* **Sikap Rendah Hati**: Senantiasa berdoa meminta tambahan ilmu yang bermanfaat yang menuntun pada amal kebajikan, bukan ilmu yang menyombongkan diri.
+* **Integritas Akademik**: Jaga kebersihan niat dan jauhi segala bentuk kecurangan agar keberkahan ilmu melekat sepanjang hayat.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Semoga kepintaran yang berkah menyertai perjuangan studi Anda! 📖✨*`;
+  }
+
+  // Topic 3: Sedekah, Infaq, Zakat, Berbagi, Harta
+  if (q.includes("sedekah") || q.includes("infaq") || q.includes("infak") || q.includes("zakat") || q.includes("berbagi") || q.includes("harta") || q.includes("miskin") || q.includes("kaya")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Sedekah, Infaq, & Berbagi Harta**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Al-Baqarah (2) Ayat 261:**
+   "Perumpamaan orang yang menginfakkan hartanya di jalan Allah seperti sebutir biji yang menumbuhkan tujuh tangkai, pada setiap tangkai ada seratus biji. Allah melipatgandakan bagi siapa yang Dia kehendaki. Dan Allah Mahaluas, Maha Mengetahui."
+2. **Surah Al-Baqarah (2) Ayat 271:**
+   "Jika kamu menampakkan sedekah-sedekahmu, maka itu baik. Dan jika kamu menyembunyikannya dan memberikannya kepada orang-orang fakir, maka itu lebih baik bagimu dan Allah akan menghapus sebagian kesalahan-kesalahanmu..."
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Arsitektur Keberkahan**: Sedekah tidak pernah mengurangi harta secara esensi spiritual, ia justru membukakan pintu rezeki tak terduga dan menolak bala bencana.
+* **Pembersih Jiwa**: Rutinkan bersedekah sekecil apa pun (walau seribu rupiah sehari secara sembunyi-sembunyi) sebagai latihan melepas keterikatan duniawi dan pembersih dosa harian.
+* **Kelapangan Hati**: Ketika merasa kuliah atau hidup sedang sempit, cobalah bersedekah; kelapangan hati orang yang dibantu akan mengalirkan energi kemudahan kembali kepada Anda.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Semoga kemuliaan rezeki yang berkah senantiasa dilimpahkan kepada Anda! 📖✨*`;
+  }
+
+  // Topic 4: Orang Tua, Ibu, Bapak, Birrul Walidain
+  if (q.includes("orang tua") || q.includes("ibu") || q.includes("bapak") || q.includes("ayah") || q.includes("parent") || q.includes("anak") || q.includes("bakti")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Berbakti kepada Orang Tua (Birrul Walidain)**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Al-Isra' (17) Ayat 23:**
+   "Dan Tuhanmu telah memerintahkan agar kamu jangan menyembah selain Dia dan hendaklah berbuat baik kepada ibu bapakmu dengan sebaik-baiknya. Jika salah seorang di antara keduanya atau kedua-duanya sampai berusia lanjut dalam pemeliharaanmu, maka sekali-kali janganlah engkau mengatakan kepada keduanya perkataan 'ah'..."
+2. **Surah Luqman (31) Ayat 14:**
+   "Dan Kami perintahkan kepada manusia (berbuat baik) kepada dua orang ibu-bapaknya; ibunya telah mengandungnya dalam keadaan lemah yang bertambah-tambah, dan menyapihnya dalam dua tahun. Bersyukurlah kepada-Ku dan kepada dua orang ibu bapakmu..."
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Tauhid dan Bakti**: Allah menyejajarkan perintah bertauhid dengan perintah berbuat baik kepada orang tua, menunjukkan betapa agungnya kedudukan berbakti di hadapan-Nya.
+* **Restu Keberkahan Hidup**: Restu orang tua adalah pembuka kelancaran kuliah, kelancaran ujian, dan kemudahan dalam menghafal Al-Quran. Pelihara tutur kata yang lembut.
+* **Kado Hafalan Terindah**: Niatkan setiap hafalan Anda sebagai mahkota bertatahkan cahaya iman yang ingin Anda sematkan di kepala ayah dan ibu Anda di surga kelak.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Semoga rida orang tua dan rida Allah senantiasa membimbing langkah sukses Anda! 📖✨*`;
+  }
+
+  // Topic 5: Shalat, Sholat, Tahajud, Tahajjud, Doa
+  if (q.includes("shalat") || q.includes("sholat") || q.includes("tahajud") || q.includes("tahajjud") || q.includes("doa") || q.includes("sujud")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Shalat, Sujud, & Kekuatan Doa**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Al-Isra' (17) Ayat 79:**
+   "Dan pada sebagian malam, lakukanlah shalat tahajud (sebagai suatu ibadah) tambahan bagimu; mudah-mudahan Tuhanmu mengangkatmu ke tempat yang terpuji."
+2. **Surah Al-Baqarah (2) Ayat 186:**
+   "Dan apabila hamba-hamba-Ku bertanya kepadamu (Muhammad) tentang Aku, maka sesungguhnya Aku dekat. Aku mengabulkan permohonan orang yang berdoa apabila dia berdoa kepada-Ku..."
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Dialog Keheningan Malam**: Tahajud adalah waktu paling mustajab untuk mencharger energi ketenangan jiwa. Berbisik di bumi, terdengar hingga langit tertinggi.
+* **Tips Retensi Hafalan**: Bacalah ayat-ayat Al-Quran yang sedang Anda hafal dalam rakaat shalat malam Anda. Ini adalah taktik paling ampuh agar hafalan melekat kuat (mutqin).
+* **Doa sebagai Senjata**: Jangan pernah meremehkan kekuatan doa. Ketika batin terasa lelah atau akademis terasa buntu, bersimpuhlah, adukan semuanya pasrah kepada Allah.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Peliharalah hubungan mesra harian Anda dengan Sang Pencipta! 📖✨*`;
+  }
+
+  // Topic 6: Puasa, Shaum
+  if (q.includes("puasa") || q.includes("shaum") || q.includes("arafah") || q.includes("ramadhan") || q.includes("ramadan")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Puasa, Ramadan, & Pengendalian Diri**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Al-Baqarah (2) Ayat 183:**
+   "Wahai orang-orang yang beriman! Diwajibkan atas kamu berpuasa sebagaimana diwajibkan atas orang-orang sebelum kamu agar kamu bertakwa."
+2. **Surah Al-Baqarah (2) Ayat 185:**
+   "Bulan Ramadan adalah (bulan) yang di dalamnya diturunkan Al-Quran, sebagai petunjuk bagi manusia dan penjelasan-penjelasan mengenai petunjuk itu dan pembeda (antara yang benar dan yang salah)..."
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Perisai Batin (Takwa)**: Puasa bukan sekadar membatasi makan-minum, melainkan sarana tarbiyah (pendidikan) batin untuk meredam nafsu kemalasan dan memurnikan fokus pikiran.
+* **Ketajaman Kognitif**: Puasa melatih ketahanan tubuh dan menjernihkan pikiran (mindfulness). Manfaatkan momen lapar puasa untuk mengulang-ulang hafalan Al-Quran.
+* **Bulan Wahyu**: Jadikan Ramadan atau hari-hari puasa sunnah sebagai festival tilawah harian Anda untuk mendekatkan diri kepada kalamullah secara intensif.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Semoga kebersihan jiwa selalu menyelimuti langkah-langkah belajar Anda! 📖✨*`;
+  }
+
+  // Topic 7: Ikhlas, Niat
+  if (q.includes("ikhlas") || q.includes("niat") || q.includes("tulus") || q.includes("rida") || q.includes("ridha")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Keikhlasan & Pemurnian Niat**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Al-Bayyinah (98) Ayat 5:**
+   "Padahal mereka hanya diperintah menyembah Allah dengan ikhlas menaati-Nya semata-mata karena (menjalankan) agama..."
+2. **Surah Al-An'am (6) Ayat 162:**
+   "Katakanlah (Muhammad), 'Sesungguhnya shalatku, ibadahku, hidupku dan matiku hanyalah untuk Allah, Tuhan seluruh alam.'"
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Ruh Setiap Amal**: Keikhlasan adalah ruh dari semua ibadah. Tanpa keikhlasan, perbuatan besar di mata manusia akan sia-sia di hadapan Allah SWT.
+* **Menghafal Bebas Beban**: Jangan menghafal Al-Quran untuk mengejar pujian, sanjungan, gelar ustadz, atau pengakuan hafiz. Hafalkan murni karena cinta dan rida Allah.
+* **Penghilang Sakit Hati**: Orang yang ikhlas tidak akan gampang kecewa oleh hasil akhir atau penilaian manusia, karena ia tahu tujuannya adalah Sang Pencipta.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Tetap luruskan niat dalam menimba ilmu harian Anda! 📖✨*`;
+  }
+
+  // Topic 8: Syukur, Terima Kasih, Nikmat
+  if (q.includes("syukur") || q.includes("terima kasih") || q.includes("nikmat")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Rasa Syukur & Menghargai Nikmat**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Ibrahim (14) Ayat 7:**
+   "Dan (ingatlah) ketika Tuhanmu memaklumkan, 'Sesungguhnya jika kamu bersyukur, niscaya Aku akan menambah (nikmat) kepadamu, tetapi jika kamu mengingkari (nikmat-Ku), maka pasti azab-Ku sangat berat.'"
+2. **Surah Luqman (31) Ayat 12:**
+   "Dan sungguh, telah Kami berikan hikmah kepada Luqman, yaitu, 'Bersyukurlah kepada Allah! Dan barangsiapa bersyukur (kepada Allah), maka sesungguhnya dia bersyukur untuk dirinya sendiri...'"
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Magnet Penambah Nikmat**: Syukur adalah kunci pembuka pintu rezeki. Semakin kita bersyukur atas nikmat sekecil apa pun, Allah berjanji akan terus melipatgandakannya.
+* **Gratitude Journaling**: Mahasiswa yang bersyukur memiliki mental yang tangguh. Luangkan waktu sebelum tidur untuk mengucap hamdalah dan mencatat 3 nikmat yang diterima hari ini.
+* **Tubuh & Waktu Sehat**: Gunakan kesehatan raga dan ketajaman memori Anda sebagai bukti kesyukuran nyata dengan terus membaca serta merenungkan firman-Nya.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Mengucap syukur melahirkan kedamaian abadi di dalam sanubari! 📖✨*`;
+  }
+
+  // Topic 9: Kesulitan, Solusi, Kemudahan, Jalan Keluar
+  if (q.includes("kesulitan") || q.includes("sulit") || q.includes("susah") || q.includes("masalah") || q.includes("pusing") || q.includes("buntu") || q.includes("jalan keluar")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Jalan Keluar & Kemudahan atas Kesulitan**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Al-Insyirah (94) Ayat 5-6:**
+   "Maka sesungguhnya beserta kesulitan ada kemudahan, sesungguhnya beserta kesulitan itu ada kemudahan."
+2. **Surah Al-Baqarah (2) Ayat 286:**
+   "Allah tidak membebani seseorang melainkan sesuai dengan kesanggupannya..."
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Paket Kemudahan**: Kemudahan tidak datang *setelah* kesulitan selesai, melainkan terpaket bersamanya. Di balik setiap ujian tersimpan pelajaran berharga yang mendewasakan jiwa.
+* **Keyakinan Mutlak**: Allah tidak akan membebani Anda sebagai mahasiswa dengan tugas kuliah atau target hafalan di luar kapasitas kesanggupan batin Anda. Anda sanggup menjalaninya!
+* **Manajemen Stres Islami**: Tarik napas panjang, bacalah *La hawla wala quwwata illa billah*, dan pecah masalah besar Anda menjadi langkah-langkah kecil yang siap diselesaikan.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Yakinlah bahwa badai ujian studi Anda pasti akan berlalu dengan indah! 📖✨*`;
+  }
+
+  // Topic 10: Cinta, Jodoh, Pernikahan, Pasangan
+  if (q.includes("cinta") || q.includes("jodoh") || q.includes("nikah") || q.includes("pasangan") || q.includes("pacar") || q.includes("keluarga") || q.includes("sayang")) {
+    return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+    
+Menanggapi pencarian Anda mengenai **Cinta, Jodoh, & Cinta Kasih (Mawaddah Warahmah)**, berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
+
+1. **Surah Ar-Rum (30) Ayat 21:**
+   "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang..."
+2. **Surah Furqan (25) Ayat 74:**
+   "Dan orang-orang yang berkata, 'Ya Tuhan kami, anugerahkanlah kepada kami pasangan kami dan keturunan kami sebagai penyenang hati (qurrata a'yun), dan jadikanlah kami imam bagi orang-orang yang bertakwa.'"
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis
+* **Penenang Jiwa (Qurrata A'yun)**: Hubungan cinta kasih yang diridai Allah didasarkan pada ketenteraman batin (sakinah) dan pertumbuhan spiritual bersama menuju ketaatan.
+* **Persiapan Jodoh Terbaik**: Fokuslah memperbaiki kualitas diri sendiri terlebih dahulu, karena jodoh yang baik adalah cerminan dari kesalehan batin diri kita.
+* **Mendoakan Kebaikan**: Biasakan memanjatkan doa Surah Furqan Ayat 74 di setiap selesai shalat fardhu demi mempersiapkan masa depan keluarga yang diredhai Allah.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode bimbingan cadangan ramah kuota. Fokuslah memperindah akhlak diri menuju masa depan keluarga bahagia sakti! 📖✨*`;
+  }
+
+  // Default Fallback
+  return `### 📖 Hasil Pencarian Khidmat (Mode Cadangan)
+
+Menanggapi pencarian Anda mengenai topik "**${query}**", berikut adalah panduan umum hikmah ayat petunjuk Al-Quran untuk ketenangan batin Anda:
+
+1. **Surah Al-Baqarah (2) Ayat 45:**
+   "Jadikanlah sabar dan shalat sebagai penolongmu. Dan sesungguhnya yang demikian itu sungguh berat, kecuali bagi orang-orang yang khusyu'."
+2. **Surah Al-Insyirah (94) Ayat 6:**
+   "Sesungguhnya sesudah kesulitan itu ada kemudahan."
+
+#### 💡 Hikmah Spiritual & Pelajaran Praktis untuk Anda
+* **Korelasikan Masalah dengan Wahyu**: Setiap keresahan atau pencarian hidup Anda sejatinya telah disediakan jawabannya di lembaran suci Al-Quran.
+* **Sikap Istiqomah**: Ketika menghadapi tantangan kehidupan atau buntu memikirkan jawaban akademik, kembalilah bersujud dan membuka kalamullah sebagai penenteram batin.
+* **Tadabbur Ayat Sehari-Hari**: Luangkan waktu 5 menit setiap pagi untuk membaca satu ayat beserta tafsir singkatnya dari surah pilihan Anda agar hari Anda diberkahi.
+
+*Catatan: Hasil pencarian saat ini disajikan dalam mode aman bimbingan cadangan ramah kuota. Untuk ulasan yang mendalam dan otomatis dari asisten AI, silakan pastikan kunci API sehat, atau diskusikan ulasan hikmah lebih lanjut dengan menceritakannya langsung di kolom **Obrolan Asisten**! 📖🌟*`;
+}
+
   app.post("/api/ai/smart-search", async (req, res) => {
     const { query } = req.body;
     try {
@@ -726,9 +927,6 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
-            config: {
-              thinkingConfig: { thinkingLevel: "LOW" as any },
-            },
           })
         );
 
@@ -739,19 +937,7 @@ Ayat ini (**${text}**) menuntun batin kita pada kesadaran mendalam akan kasih sa
         res.json({ result: response.text });
       } catch (innerErr: any) {
         logAIWarning("search", innerErr);
-        const fallbackSearch = `### Hasil Pencarian Khidmat (Mode Cadangan)
-
-Menanggapi pencarian Anda tentang topik "${query}", berikut adalah ayat-ayat Al-Quran paling utama yang memberi petunjuk:
-
-1. Surah Al-Baqarah (2) Ayat 45:
-   "Jadikanlah sabar dan shalat sebagai penolongmu. Dan sesungguhnya yang demikian itu sungguh berat, kecuali bagi orang-orang yang khusyu'."
-2. Surah Al-Insyirah (94) Ayat 6:
-   "Sesungguhnya sesudah kesulitan itu ada kemudahan."
-
-#### Hikmah Spiritual & Pelajaran Praktis
-Di tengah padatnya dunia perkuliahan dan beratnya godaan keseharian, kesabaran batin, shalat khusyu', serta keyakinan mutlak akan pertolongan-Nya adalah bekal paling utama bagi seorang penuntut ilmu.
-
-Catatan: Hasil pencarian saat ini disajikan dalam mode aman cadangan ramah kuota. Silakan terus berselancar di surah lainnya menggunakan tab Semua Surah! 📖✨`;
+        const fallbackSearch = getSmartFallbackSearch(query);
         return res.json({ result: fallbackSearch });
       }
     } catch (error: any) {
@@ -776,9 +962,6 @@ Catatan: Hasil pencarian saat ini disajikan dalam mode aman cadangan ramah kuota
           ai.models.generateContent({
             model: "gemini-3.5-flash",
             contents: prompt,
-            config: {
-              thinkingConfig: { thinkingLevel: "LOW" as any },
-            },
           })
         );
 
